@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Находка Авто — автозапчасти и автозвук в Находке</title>
+  <meta name="description" content="Автозапчасти и автозвук в Находке: пружины, амортизаторы, автожидкости, магнитолы, колонки, сабвуферы, усилители. Звоните: 8 914 703-69-33.">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <header class="header">
+    <div class="container header__row">
+      <a href="#" class="logo">
+        <span class="logo__mark">НА</span>
+        <span class="logo__text">Находка <b>Авто</b></span>
+      </a>
+      <nav class="nav">
+        <a href="#catalog" data-section="parts">Автозапчасти</a>
+        <a href="#catalog" data-section="audio">Автозвук</a>
+        <a href="#about">О нас</a>
+        <a href="#contacts">Контакты</a>
+      </nav>
+      <a class="btn btn--call header__call" href="tel:+79147036933">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.6 10.8a15.1 15.1 0 0 0 6.6 6.6l2.2-2.2a1 1 0 0 1 1-.25 11.4 11.4 0 0 0 3.6.57 1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.45.57 3.57a1 1 0 0 1-.25 1L6.6 10.8z"/></svg>
+        <span>8 914 703-69-33</span>
+      </a>
+    </div>
+  </header>
+
+  <section class="hero">
+    <div class="container">
+      <h1>Автозапчасти и автозвук в&nbsp;Находке</h1>
+      <p class="hero__sub">Пружины, амортизаторы, автожидкости, магнитолы, колонки, сабвуферы и усилители. Опыт работы более 10 лет.</p>
+      <form class="search" id="searchForm" role="search">
+        <input id="searchInput" type="search" placeholder="Что ищете? Название или артикул" autocomplete="off">
+        <button class="btn btn--accent" type="submit">Найти</button>
+      </form>
+      <div class="tiles-group">
+        <h2 class="tiles-group__title">Автозапчасти</h2>
+        <div class="tiles" data-tiles="parts"></div>
+      </div>
+      <div class="tiles-group">
+        <h2 class="tiles-group__title">Автозвук</h2>
+        <div class="tiles" data-tiles="audio"></div>
+      </div>
+    </div>
+  </section>
+
+  <main id="catalog" class="catalog container">
+    <div class="catalog__head">
+      <h2 id="catalogTitle">Каталог</h2>
+      <div class="tabs" id="sectionTabs">
+        <button data-section="all" class="is-active">Все товары</button>
+        <button data-section="parts">Автозапчасти</button>
+        <button data-section="audio">Автозвук</button>
+      </div>
+    </div>
+    <div class="chips" id="categoryChips"></div>
+    <p class="catalog__count" id="catalogCount"></p>
+    <div class="grid" id="productGrid"></div>
+    <div class="empty" id="emptyState" hidden>
+      <p><b>Ничего не нашлось.</b></p>
+      <p>Возможно, нужная деталь есть у нас, но ещё не добавлена на сайт. Позвоните, и мы подскажем.</p>
+      <a class="btn btn--call" href="tel:+79147036933">Позвонить: 8 914 703-69-33</a>
+    </div>
+  </main>
+
+  <section class="request">
+    <div class="container request__box">
+      <div>
+        <h2>Не нашли нужную деталь?</h2>
+        <p>На сайте пока не весь ассортимент. Позвоните, расскажите, что ищете, и мы проверим наличие.</p>
+      </div>
+      <a class="btn btn--accent btn--big" href="tel:+79147036933">Позвонить</a>
+    </div>
+  </section>
+
+  <section id="about" class="about container">
+    <h2>О нас</h2>
+    <div class="about__grid">
+      <div class="about__item">
+        <h3>Автозапчасти</h3>
+        <p>Пружины, амортизаторы, автомобильные жидкости и расходные материалы.</p>
+      </div>
+      <div class="about__item">
+        <h3>Автозвук</h3>
+        <p>Автомагнитолы, колонки, сабвуферы, усилители и комплектующие.</p>
+      </div>
+      <div class="about__item">
+        <h3>Опыт</h3>
+        <p>Более 10 лет торгуем на авторынке Находки.</p>
+      </div>
+    </div>
+  </section>
+
+  <footer id="contacts" class="footer">
+    <div class="container footer__grid">
+      <div>
+        <div class="logo logo--dark">
+          <span class="logo__mark">НА</span>
+          <span class="logo__text">Находка <b>Авто</b></span>
+        </div>
+        <p class="footer__muted">Автозапчасти и автозвук в Находке</p>
+      </div>
+      <div>
+        <h3>Телефон</h3>
+        <a class="footer__phone" href="tel:+79147036933">8 914 703-69-33</a>
+      </div>
+      <div>
+        <h3>Где нас найти</h3>
+        <p>Авторынок, г. Находка</p>
+        <p class="footer__muted">Точное место и часы работы — уточняются</p>
+      </div>
+    </div>
+  </footer>
+
+  <a class="call-fab" href="tel:+79147036933" aria-label="Позвонить">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.6 10.8a15.1 15.1 0 0 0 6.6 6.6l2.2-2.2a1 1 0 0 1 1-.25 11.4 11.4 0 0 0 3.6.57 1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.45.57 3.57a1 1 0 0 1-.25 1L6.6 10.8z"/></svg>
+  </a>
+
+  <dialog class="modal" id="productModal">
+    <button class="modal__close" id="modalClose" aria-label="Закрыть">×</button>
+    <div id="modalBody"></div>
+  </dialog>
+
+  <script src="products.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
