@@ -1,12 +1,12 @@
 :root {
-  --bg: #f5f6f8;
+  --bg: #f8f8fa;
   --surface: #ffffff;
   --text: #1a1d23;
   --muted: #6b7280;
   --border: #e3e6eb;
   --dark: #15181e;
   --dark-2: #232831;
-  --accent: #d62828;
+  --accent: #e32b2b;
   --accent-hover: #b81f1f;
   --accent-soft: #fdeceb;
   --danger: #c62828;
@@ -400,3 +400,78 @@ h1, h2, h3 { line-height: 1.2; margin: 0 0 .5em; }
   #carChips { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 4px; }
   #carChips .chip { flex: none; }
 }
+
+/* Фото: первый экран, «Не нашли», «О нас» */
+.hero {
+  background:
+    linear-gradient(90deg, #15181e 0%, rgba(21, 24, 30, .9) 36%, rgba(21, 24, 30, .3) 72%, rgba(21, 24, 30, .1) 100%),
+    url("images/hero.jpg") right center / cover no-repeat;
+  color: #fff;
+  border-bottom: 0;
+  padding: 56px 0 48px;
+}
+.hero h1 { color: #fff; }
+.hero__sub { color: #cfd3da; }
+.hero__sub b { color: #fff; }
+.search { box-shadow: 0 10px 30px rgba(0, 0, 0, .35); }
+.hero .tile { background: rgba(255, 255, 255, .96); }
+.request__box {
+  background:
+    linear-gradient(90deg, rgba(21, 24, 30, .95) 0%, rgba(21, 24, 30, .8) 55%, rgba(21, 24, 30, .4) 100%),
+    url("images/spring.jpg") center / cover no-repeat;
+  color: #fff;
+  border: 0;
+  border-left: 4px solid var(--accent);
+  padding: 36px 32px;
+}
+.request__box p { color: #cfd3da; }
+.about__photo { width: 100%; height: 280px; object-fit: cover; border-radius: var(--radius); display: block; margin-bottom: 16px; }
+
+@media (max-width: 820px) {
+  .hero {
+    background:
+      linear-gradient(180deg, rgba(21, 24, 30, .45) 0%, rgba(21, 24, 30, .85) 40%, #15181e 75%),
+      url("images/hero.jpg") 72% top / auto 62% no-repeat, #15181e;
+  }
+  .about__photo { height: 200px; }
+}
+
+/* Чуть-чуть яркости: мягкое красное свечение */
+.hero { box-shadow: inset 0 -3px 0 var(--accent); }
+.hero h1 { text-shadow: 0 0 34px rgba(227, 43, 43, .35); }
+.btn--accent, .btn--call { box-shadow: 0 6px 18px rgba(227, 43, 43, .35); }
+.btn--accent:hover, .btn--call:hover { box-shadow: 0 8px 24px rgba(227, 43, 43, .5); }
+.tile:hover { box-shadow: 0 8px 24px rgba(227, 43, 43, .22); }
+.tile__icon, .part__icon { box-shadow: inset 0 0 0 1px rgba(227, 43, 43, .15); }
+.card:hover { box-shadow: 0 10px 26px rgba(227, 43, 43, .14); border-color: rgba(227, 43, 43, .45); }
+.catalog__head h2::after, .about > h2::after {
+  content: ""; display: block; width: 56px; height: 4px; margin-top: 8px; border-radius: 2px;
+  background: linear-gradient(90deg, var(--accent), #ff7a45);
+}
+.chip.is-active { box-shadow: 0 4px 12px rgba(227, 43, 43, .3); }
+.call-fab { box-shadow: 0 6px 22px rgba(227, 43, 43, .55); }
+
+/* Окно товара: спросить, пара, аналоги */
+.btn--ghost { background: var(--surface); color: var(--text); box-shadow: inset 0 0 0 1px var(--border); }
+.btn--ghost:hover { box-shadow: inset 0 0 0 1px var(--accent); color: var(--accent); }
+.btn--max { background: #4f46e5; color: #fff; }
+.ask { display: grid; gap: 8px; }
+.ask .btn { width: 100%; }
+.ask__tip { margin: 8px 0 0; color: var(--green); font-size: .9rem; font-weight: 600; }
+.related { margin-top: 22px; padding-top: 16px; border-top: 1px solid var(--border); }
+.related h3 { font-size: 1.05rem; margin: 0 0 2px; }
+.related__hint { margin: 0 0 10px; color: var(--muted); font-size: .85rem; }
+.related__item {
+  display: flex; justify-content: space-between; align-items: center; gap: 12px; width: 100%;
+  font: inherit; font-size: .92rem; text-align: left; color: var(--text); background: var(--bg);
+  border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; margin-bottom: 6px; cursor: pointer; min-height: 44px;
+}
+.related__item:hover { border-color: var(--accent); }
+.related__price { flex: none; font-weight: 700; color: var(--accent); }
+.modal { overflow-y: auto; }
+
+/* Длинное название «Амортизаторы-Пружины» в шапке */
+.logo__text { white-space: nowrap; }
+@media (max-width: 420px) { .logo { font-size: .95rem; gap: 8px; } .logo__mark { width: 32px; height: 32px; font-size: .8rem; } }
+/* Название магазина целиком красным */
+.logo__text { color: var(--accent); font-weight: 800; letter-spacing: .01em; }
