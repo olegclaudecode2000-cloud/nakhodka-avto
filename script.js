@@ -287,3 +287,12 @@ $("modalClose").addEventListener("click", () => modal.close());
 modal.addEventListener("click", e => { if (e.target === modal) modal.close(); });
 
 render();
+
+// Шапка становится белой, как только первый экран уходит под неё
+const header = document.querySelector(".header");
+const hero = document.querySelector(".hero");
+if (header && hero && "IntersectionObserver" in window) {
+  const watch = () => new IntersectionObserver(([e]) => header.classList.toggle("header--light", !e.isIntersecting),
+    { rootMargin: `-${header.offsetHeight}px 0px 0px 0px` }).observe(hero);
+  watch();
+}
