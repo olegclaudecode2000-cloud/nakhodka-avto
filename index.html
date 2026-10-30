@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Находка Авто — автозапчасти и автозвук в Находке</title>
-  <meta name="description" content="Автозапчасти и автозвук в Находке: пружины, амортизаторы, автожидкости, магнитолы, колонки, сабвуферы, усилители. Звоните: 8 914 703-69-33.">
+  <title>Находка Авто — амортизаторы и пружины в Находке</title>
+  <meta name="description" content="Амортизаторы, стойки, пружины, опоры и пыльники KYB, OBK и других брендов в Находке. Поиск по артикулу и машине, цены на сайте. Звоните: 8 914 703-69-33.">
   <link rel="canonical" href="https://olegclaudecode2000-cloud.github.io/nakhodka-avto/">
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
   <link rel="icon" href="favicon-32.png" type="image/png" sizes="32x32">
@@ -16,7 +16,7 @@
   <meta property="og:locale" content="ru_RU">
   <meta property="og:site_name" content="Находка Авто">
   <meta property="og:title" content="Находка Авто — амортизаторы и пружины в Находке">
-  <meta property="og:description" content="Амортизаторы и пружины KYB, OBK в наличии. 19 лет на Фарпосте. Находкинский пр-т, 1м.">
+  <meta property="og:description" content="Амортизаторы, стойки и пружины KYB, OBK и других брендов. Поиск по артикулу и машине. 19 лет на Фарпосте. Находкинский пр-т, 1м.">
   <meta property="og:url" content="https://olegclaudecode2000-cloud.github.io/nakhodka-avto/">
   <meta property="og:image" content="https://olegclaudecode2000-cloud.github.io/nakhodka-avto/og-image.jpg">
   <meta property="og:image:width" content="1200">
@@ -30,7 +30,7 @@
     "@type": "AutoPartsStore",
     "name": "Находка Авто",
     "alternateName": "Амортизаторы-Пружины",
-    "description": "Амортизаторы, стойки и пружины KYB, OBK. Самовывоз и доставка до транспортной компании.",
+    "description": "Амортизаторы, стойки, пружины, опоры и пыльники KYB, OBK и других брендов. Самовывоз и доставка до транспортной компании.",
     "url": "https://olegclaudecode2000-cloud.github.io/nakhodka-avto/",
     "image": "https://olegclaudecode2000-cloud.github.io/nakhodka-avto/og-image.jpg",
     "telephone": "+7 914 703-69-33",
@@ -46,7 +46,7 @@
   }
   </script>
 
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="styles.css?v=20261031a">
 </head>
 <body>
 
@@ -57,8 +57,7 @@
         <span class="logo__text">Находка <b>Авто</b></span>
       </a>
       <nav class="nav">
-        <a href="#catalog" data-section="parts">Автозапчасти</a>
-        <a href="#catalog" data-section="audio">Автозвук</a>
+        <a href="#catalog">Каталог</a>
         <a href="#about">О нас</a>
         <a href="#contacts">Контакты</a>
       </nav>
@@ -71,38 +70,34 @@
 
   <section class="hero">
     <div class="container">
-      <h1>Автозапчасти и автозвук в&nbsp;Находке</h1>
-      <p class="hero__sub">Пружины, амортизаторы, автожидкости, магнитолы, колонки, сабвуферы и усилители. 19 лет на Фарпосте.</p>
+      <h1>Амортизаторы и пружины в&nbsp;Находке</h1>
+      <p class="hero__sub">KYB, OBK и ещё <span data-brands>десятки</span> брендов. <b data-total>2 500</b> позиций с ценами, поиск по артикулу и по машине. 19 лет на Фарпосте.</p>
       <form class="search" id="searchForm" role="search">
-        <input id="searchInput" type="search" placeholder="Что ищете? Название или артикул" autocomplete="off">
+        <input id="searchInput" type="search" placeholder="Артикул, название или машина: KYB 334, Camry, Fielder…" autocomplete="off" aria-label="Поиск по каталогу">
         <button class="btn btn--accent" type="submit">Найти</button>
       </form>
-      <div class="tiles-group">
-        <h2 class="tiles-group__title">Автозапчасти</h2>
-        <div class="tiles" data-tiles="parts"></div>
-      </div>
-      <div class="tiles-group">
-        <h2 class="tiles-group__title">Автозвук</h2>
-        <div class="tiles" data-tiles="audio"></div>
-      </div>
+      <div class="tiles" id="tiles"></div>
     </div>
   </section>
 
   <main id="catalog" class="catalog container">
     <div class="catalog__head">
       <h2 id="catalogTitle">Каталог</h2>
-      <div class="tabs" id="sectionTabs">
-        <button data-section="all" class="is-active">Все товары</button>
-        <button data-section="parts">Автозапчасти</button>
-        <button data-section="audio">Автозвук</button>
-      </div>
+      <p class="catalog__note">Цены от <span data-updated></span>. Прайс обновляется каждую неделю — наличие уточняйте по телефону.</p>
     </div>
-    <div class="chips" id="categoryChips"></div>
+    <div class="filters">
+      <div class="chips" id="categoryChips"></div>
+      <div class="chips" id="carChips"></div>
+      <label class="brand-select">Бренд:
+        <select id="brandSelect"><option value="">Все бренды</option></select>
+      </label>
+    </div>
     <p class="catalog__count" id="catalogCount"></p>
     <div class="grid" id="productGrid"></div>
+    <button class="btn btn--ghost more" id="moreBtn" hidden></button>
     <div class="empty" id="emptyState" hidden>
       <p><b>Ничего не нашлось.</b></p>
-      <p>Возможно, нужная деталь есть у нас, но ещё не добавлена на сайт. Позвоните, и мы подскажем.</p>
+      <p>Скорее всего, нужная деталь есть или привезём под заказ. Позвоните и назовите машину или артикул.</p>
       <a class="btn btn--call" href="tel:+79147036933">Позвонить: 8 914 703-69-33</a>
     </div>
   </main>
@@ -111,7 +106,7 @@
     <div class="container request__box">
       <div>
         <h2>Не нашли нужную деталь?</h2>
-        <p>На сайте пока не весь ассортимент. Позвоните, расскажите, что ищете, и мы проверим наличие.</p>
+        <p>На сайте — основной ассортимент. Позвоните, назовите марку, модель и год машины — подберём и проверим наличие.</p>
       </div>
       <a class="btn btn--accent btn--big" href="tel:+79147036933">Позвонить</a>
     </div>
@@ -121,12 +116,12 @@
     <h2>О нас</h2>
     <div class="about__grid">
       <div class="about__item">
-        <h3>Автозапчасти</h3>
-        <p>Пружины, амортизаторы, автомобильные жидкости и расходные материалы.</p>
+        <h3>Подвеска</h3>
+        <p>Амортизаторы, стойки, пружины, опоры, подшипники, пыльники и отбойники.</p>
       </div>
       <div class="about__item">
-        <h3>Автозвук</h3>
-        <p>Автомагнитолы, колонки, сабвуферы, усилители и комплектующие.</p>
+        <h3>Бренды</h3>
+        <p>KYB, OBK, Febest, CTR, LYNXauto и другие — для японских, корейских и не только машин.</p>
       </div>
       <div class="about__item">
         <h3>Опыт</h3>
@@ -142,7 +137,8 @@
           <span class="logo__mark">НА</span>
           <span class="logo__text">Находка <b>Авто</b></span>
         </div>
-        <p class="footer__muted">Автозапчасти и автозвук в Находке</p>
+        <p class="footer__muted">Амортизаторы и пружины в Находке</p>
+        <p class="footer__muted"><a href="https://olegclaudecode2000-cloud.github.io/avtozvuk-iz-yaponii/">Автозвук и магнитолы — «Автозвук из Японии» →</a></p>
       </div>
       <div>
         <h3>Телефон</h3>
@@ -165,7 +161,7 @@
     <div id="modalBody"></div>
   </dialog>
 
-  <script src="products.js"></script>
-  <script src="script.js"></script>
+  <script src="data/parts.js?v=20261031a"></script>
+  <script src="script.js?v=20261031a"></script>
 </body>
 </html>
