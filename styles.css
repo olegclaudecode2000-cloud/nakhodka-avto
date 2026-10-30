@@ -477,13 +477,31 @@ h1, h2, h3 { line-height: 1.2; margin: 0 0 .5em; }
 /* Название магазина целиком красным */
 .logo__text { color: var(--accent); font-weight: 800; letter-spacing: .01em; }
 
-/* Шапка плавно светлеет вместе с прокруткой: --t от 0 (тёмная) до 1 (белая) */
+/* Шапка: анимация из тёмной в белую, когда первый экран уходит под неё */
 .header {
-  --t: 0;
-  background: rgba(calc(21 + 234 * var(--t)), calc(24 + 231 * var(--t)), calc(30 + 225 * var(--t)), calc(1 - .08 * var(--t)));
-  -webkit-backdrop-filter: blur(calc(12px * var(--t))) saturate(calc(1 + .4 * var(--t)));
-  backdrop-filter: blur(calc(12px * var(--t))) saturate(calc(1 + .4 * var(--t)));
-  box-shadow: inset 0 -2px 0 rgba(227, 43, 43, var(--t)), 0 8px 24px rgba(21, 24, 30, calc(.08 * var(--t)));
+  transition: background-color .7s cubic-bezier(.22, .61, .36, 1), box-shadow .7s ease, -webkit-backdrop-filter .7s ease, backdrop-filter .7s ease;
 }
-.header .nav a { color: rgb(calc(207 - 181 * var(--t)), calc(211 - 182 * var(--t)), calc(218 - 183 * var(--t))); }
-.header .nav a:hover { color: var(--accent); }
+.header .nav a { transition: color .6s ease .1s; }
+.header .logo__mark, .header__call { transition: transform .5s cubic-bezier(.34, 1.56, .64, 1), box-shadow .6s ease; }
+/* Красная линия снизу «прорисовывается» слева направо */
+.header::after {
+  content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 2px;
+  background: linear-gradient(90deg, var(--accent), #ff7a45, var(--accent));
+  transform: scaleX(0); transform-origin: left; transition: transform .8s cubic-bezier(.65, 0, .35, 1) .15s;
+}
+.header--light {
+  background-color: rgba(255, 255, 255, .92);
+  -webkit-backdrop-filter: blur(12px) saturate(1.4);
+  backdrop-filter: blur(12px) saturate(1.4);
+  box-shadow: 0 8px 24px rgba(21, 24, 30, .08);
+}
+.header--light::after { transform: scaleX(1); }
+.header--light .nav a { color: var(--text); }
+.header--light .nav a:hover { color: var(--accent); }
+/* Значок «АП» и кнопка звонка слегка «подпрыгивают» в момент смены */
+.header--light .logo__mark, .header--light .header__call { animation: header-pop .6s cubic-bezier(.34, 1.56, .64, 1); }
+@keyframes header-pop { 40% { transform: scale(1.08); } }
+@media (prefers-reduced-motion: reduce) {
+  .header, .header .nav a, .header::after { transition: none; }
+  .header--light .logo__mark, .header--light .header__call { animation: none; }
+}
