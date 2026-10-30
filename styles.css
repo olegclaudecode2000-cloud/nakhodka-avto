@@ -483,11 +483,11 @@ h1, h2, h3 { line-height: 1.2; margin: 0 0 .5em; }
 }
 .header .nav a { transition: color .6s ease .1s; }
 .header .logo__mark, .header__call { transition: transform .5s cubic-bezier(.34, 1.56, .64, 1), box-shadow .6s ease; }
-/* Красная линия снизу «прорисовывается» слева направо */
+/* Красная линия снизу — просто появляется вместе с белым фоном, без эффектов */
 .header::after {
   content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 2px;
-  background: linear-gradient(90deg, var(--accent), #ff7a45, var(--accent));
-  transform: scaleX(0); transform-origin: left; transition: transform .8s cubic-bezier(.65, 0, .35, 1) .15s;
+  background: var(--accent);
+  opacity: 0; transition: opacity .7s ease;
 }
 .header--light {
   background-color: rgba(255, 255, 255, .92);
@@ -495,7 +495,7 @@ h1, h2, h3 { line-height: 1.2; margin: 0 0 .5em; }
   backdrop-filter: blur(12px) saturate(1.4);
   box-shadow: 0 8px 24px rgba(21, 24, 30, .08);
 }
-.header--light::after { transform: scaleX(1); }
+.header--light::after { opacity: 1; }
 .header--light .nav a { color: var(--text); }
 .header--light .nav a:hover { color: var(--accent); }
 /* Значок «АП» и кнопка звонка слегка «подпрыгивают» в момент смены */
