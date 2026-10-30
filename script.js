@@ -288,11 +288,19 @@ modal.addEventListener("click", e => { if (e.target === modal) modal.close(); })
 
 render();
 
-// Шапка становится белой, как только первый экран уходит под неё
+// Шапка плавно светлеет, пока нижний край первого экрана проезжает под ней
 const header = document.querySelector(".header");
 const hero = document.querySelector(".hero");
-if (header && hero && "IntersectionObserver" in window) {
-  const watch = () => new IntersectionObserver(([e]) => header.classList.toggle("header--light", !e.isIntersecting),
-    { rootMargin: `-${header.offsetHeight}px 0px 0px 0px` }).observe(hero);
-  watch();
+if (header && hero) {
+  const FADE = 220; // за сколько пикселей прокрутки шапка из тёмной становится белой
+  let ticking = false;
+  const update = () => {
+    const bottom = hero.getBoundingClientRect().bottom - header.offsetHeight;
+    const t = Math.min(1, Math.max(0, 1 - bottom / FADE));
+    header.style.setProperty("--t", (t * t * (3 - 2 * t)).toFixed(3)); // мягкое начало и конец
+    ticking = false;
+  };
+  addEventListener("scroll", () => { if (!ticking) { ticking = true; requestAnimationFrame(update); } }, { passive: true });
+  addEventListener("resize", update);
+  update();
 }

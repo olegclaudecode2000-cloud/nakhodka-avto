@@ -477,15 +477,13 @@ h1, h2, h3 { line-height: 1.2; margin: 0 0 .5em; }
 /* Название магазина целиком красным */
 .logo__text { color: var(--accent); font-weight: 800; letter-spacing: .01em; }
 
-/* Шапка: тёмная над первым экраном, белая над светлой частью сайта */
-.header { transition: background-color .3s ease, box-shadow .3s ease; }
-.header .nav a, .header .logo__mark { transition: color .3s ease; }
-.header--light {
-  background: rgba(255, 255, 255, .9);
-  -webkit-backdrop-filter: blur(12px) saturate(1.4);
-  backdrop-filter: blur(12px) saturate(1.4);
-  box-shadow: inset 0 -2px 0 var(--accent), 0 8px 24px rgba(21, 24, 30, .08);
+/* Шапка плавно светлеет вместе с прокруткой: --t от 0 (тёмная) до 1 (белая) */
+.header {
+  --t: 0;
+  background: rgba(calc(21 + 234 * var(--t)), calc(24 + 231 * var(--t)), calc(30 + 225 * var(--t)), calc(1 - .08 * var(--t)));
+  -webkit-backdrop-filter: blur(calc(12px * var(--t))) saturate(calc(1 + .4 * var(--t)));
+  backdrop-filter: blur(calc(12px * var(--t))) saturate(calc(1 + .4 * var(--t)));
+  box-shadow: inset 0 -2px 0 rgba(227, 43, 43, var(--t)), 0 8px 24px rgba(21, 24, 30, calc(.08 * var(--t)));
 }
-.header--light .nav a { color: var(--text); }
-.header--light .nav a:hover { color: var(--accent); }
-@media (prefers-reduced-motion: reduce) { .header, .header .nav a { transition: none; } }
+.header .nav a { color: rgb(calc(207 - 181 * var(--t)), calc(211 - 182 * var(--t)), calc(218 - 183 * var(--t))); }
+.header .nav a:hover { color: var(--accent); }
