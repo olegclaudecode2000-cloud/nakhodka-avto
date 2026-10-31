@@ -543,3 +543,15 @@ h1, h2, h3 { line-height: 1.2; margin: 0 0 .5em; }
   .logo__text { overflow: hidden; text-overflow: ellipsis; }
   .header__max, .header__call { padding: 8px 10px; }
 }
+
+/* Заметная ссылка на папин сайт в подвале */
+.footer__partner {
+  display: inline-flex; align-items: center; gap: 10px; margin-top: 12px; padding: 10px 16px; min-height: 44px;
+  background: #15181e; color: #ffb020; border-radius: 10px; font-weight: 700; text-decoration: none;
+  box-shadow: 0 6px 18px rgba(21, 24, 30, .25); transition: transform .15s, box-shadow .15s;
+}
+.footer__partner svg { width: 20px; height: 20px; fill: currentColor; flex: none; }
+.footer__partner b { transition: transform .15s; }
+.footer__partner:hover { transform: translateY(-2px); box-shadow: 0 10px 24px rgba(21, 24, 30, .35); }
+.footer__partner:hover b { transform: translateX(3px); }
+@media (max-width: 820px) { .footer { padding-bottom: 96px; } }
