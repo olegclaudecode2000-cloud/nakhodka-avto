@@ -555,3 +555,17 @@ h1, h2, h3 { line-height: 1.2; margin: 0 0 .5em; }
 .footer__partner:hover { transform: translateY(-2px); box-shadow: 0 10px 24px rgba(21, 24, 30, .35); }
 .footer__partner:hover b { transform: translateX(3px); }
 @media (max-width: 820px) { .footer { padding-bottom: 96px; } }
+
+/* Шапка на телефоне: MAX и звонок — одинаковые квадратные кнопки */
+@media (max-width: 820px) {
+  .header .header__max, .header .header__call {
+    width: 46px; height: 46px; min-width: 46px; min-height: 46px; padding: 0; justify-content: center; border-radius: 12px;
+  }
+  .header .header__max svg, .header .header__call svg { width: 22px; height: 22px; }
+}
+/* MAX тоже «подпрыгивает» вместе со значком и звонком, когда шапка белеет */
+.header .header__max { transition: transform .5s cubic-bezier(.34, 1.56, .64, 1), box-shadow .6s ease; }
+.header--light .header__max { animation: header-pop .6s cubic-bezier(.34, 1.56, .64, 1); }
+@media (prefers-reduced-motion: reduce) { .header--light .header__max { animation: none; } }
+/* Длинные названия разделов на плитках переносятся по слогам, а не вылезают за край */
+.tile span:not(.tile__icon) { overflow-wrap: anywhere; -webkit-hyphens: auto; hyphens: auto; }
