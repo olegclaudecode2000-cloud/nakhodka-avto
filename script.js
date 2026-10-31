@@ -338,7 +338,13 @@ searchInput.addEventListener("input", () => {
   clearTimeout(typing);
   typing = setTimeout(() => { state.query = searchInput.value; reset(); }, 250);
 });
-moreBtn.addEventListener("click", () => { state.shown += PAGE; render(); });
+moreBtn.addEventListener("click", () => {
+  const was = grid.children.length;
+  state.shown += PAGE;
+  render();
+  // Уже показанные карточки не анимируем заново — появляются только новые
+  [...grid.children].slice(0, was).forEach(c => { c.style.animation = "none"; });
+});
 
 // Окно товара
 const modal = $("productModal"), modalBody = $("modalBody");
@@ -609,4 +615,13 @@ if (header && lightFrom && darkFrom) {
   addEventListener("scroll", onScroll, { passive: true });
   addEventListener("resize", onScroll);
   update();
+}
+
+// Анимация: блоки ниже каталога плавно появляются при прокрутке (как на папином сайте)
+if ("IntersectionObserver" in window && !matchMedia("(prefers-reduced-motion: reduce)").matches) {
+  const io = new IntersectionObserver(entries => entries.forEach(e => {
+    if (e.isIntersecting) { e.target.classList.add("is-in"); io.unobserve(e.target); }
+  }), { rootMargin: "0px 0px -8% 0px" });
+  document.querySelectorAll(".stats__item, .request__box, .about h2, .about__photo, .about__item, .footer__grid > div")
+    .forEach((el, n) => { el.classList.add("reveal"); el.style.setProperty("--d", (n % 4) * 70 + "ms"); io.observe(el); });
 }

@@ -797,3 +797,27 @@ body { background: #eceef2; }
   .stats__item b { font-size: 1.5rem; }
   .about { padding: 36px 16px 44px; }
 }
+
+/* ===== Анимации (как на папином сайте) ===== */
+/* Первый экран: заголовок, текст, поиск, кнопки и плитки выезжают по очереди при открытии */
+@keyframes rise { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: none; } }
+.hero > .container > * { animation: rise .7s cubic-bezier(.2, .7, .2, 1) both; }
+.hero > .container > :nth-child(2) { animation-delay: .1s; }
+.hero > .container > :nth-child(3) { animation-delay: .2s; }
+.hero > .container > :nth-child(4) { animation-delay: .3s; }
+.hero > .container > :nth-child(5) { animation-delay: .4s; }
+
+/* Карточки каталога появляются по очереди после выбора раздела и поиска */
+.grid > .card { animation: rise .45s cubic-bezier(.2, .7, .2, 1) both; }
+.grid > .card:nth-child(2) { animation-delay: .04s; } .grid > .card:nth-child(3) { animation-delay: .08s; }
+.grid > .card:nth-child(4) { animation-delay: .12s; } .grid > .card:nth-child(5) { animation-delay: .16s; }
+.grid > .card:nth-child(6) { animation-delay: .2s; } .grid > .card:nth-child(n+7) { animation-delay: .24s; }
+
+/* Блоки ниже — плавно при прокрутке */
+.reveal { opacity: 0; transform: translateY(22px); transition: opacity .6s ease var(--d, 0ms), transform .6s cubic-bezier(.2, .7, .2, 1) var(--d, 0ms); }
+.reveal.is-in { opacity: 1; transform: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .hero > .container > *, .grid > .card { animation: none; }
+  .reveal { opacity: 1; transform: none; }
+}
