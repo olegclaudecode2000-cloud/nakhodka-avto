@@ -46,11 +46,17 @@ const MAIN_BRAND = D.b.map(b => /^(kyb|obk)$/i.test(b));
 // Место установки (перед/зад, лев/прав) — для пары и аналогов
 const placeOf = s => ({ front: /перед/i.test(s), rear: /зад/i.test(s), left: /лев/i.test(s), right: /прав/i.test(s) });
 const SIDE_PLACE = D.s.map(placeOf);
+// У KYB сторона часто в названии «(FR)» или в применимости «-- FR»: FR — перед прав, RL — зад лев
+const CODE_PLACE = { FR: "перед прав", FL: "перед лев", RR: "зад прав", RL: "зад лев" };
+const codePlace = re => s => placeOf(CODE_PLACE[(String(s).toUpperCase().match(re) || [])[1]] || "");
+const mergePlace = (...ps) => ({ front: ps.some(p => p.front), rear: ps.some(p => p.rear), left: ps.some(p => p.left), right: ps.some(p => p.right) });
+const NAME_PLACE = D.n.map(n => mergePlace(placeOf(n), codePlace(/\((FR|FL|RR|RL)\)/)(n)));
+const FITS_PLACE = D.f.map(codePlace(/--\s*(FR|FL|RR|RL)\b/));
 
 const ITEMS = D.p.map((r, i) => ({
   i, cat: r[0], bi: r[1], brand: D.b[r[1]], article: String(r[2]), ni: r[3], name: D.n[r[3]],
   si: r[4], side: D.s[r[4]], fi: r[5], fits: D.f[r[5]], price: r[6], sale: r[7] === 1,
-  extra: r[8], art: norm(r[2]), isMain: MAIN_BRAND[r[1]], place: SIDE_PLACE[r[4]],
+  extra: r[8], art: norm(r[2]), isMain: MAIN_BRAND[r[1]], place: mergePlace(SIDE_PLACE[r[4]], NAME_PLACE[r[3]], FITS_PLACE[r[5]]),
 }));
 // Сначала KYB и OBK — основное в магазине (остальное уже отсортировано по разделам и брендам)
 // Главное в магазине — амортизаторы, стойки и пружины: они первыми, внутри них сначала KYB и OBK
@@ -349,19 +355,147 @@ function openPart(i) {
       <table class="specs">${rows.map(([k, v]) => `<tr><td>${k}</td><td>${escapeHtml(v)}</td></tr>`).join("")}</table>
       <div class="modal__price">${money(it.price)}${it.sale ? ' <span class="badge badge--sale">Распродажа</span>' : ""}</div>
       <p class="modal__note"><span class="badge badge--stock">В наличии</span> Цена по прайсу от ${PARTS_UPDATED}.</p>
+      ${pairBlock(it)}
       <div class="ask">
+        <button class="btn btn--list${inList(it) ? " is-added" : ""}" data-list>${listBtnText(it)}</button>
         <a class="btn btn--call btn--big" href="${PHONE_LINK}">Позвонить: ${PHONE_TEXT}</a>
         ${MAX_LINK ? `<button class="btn btn--max" data-ask-max>Спросить в MAX</button>` : ""}
         <a class="btn btn--ghost" href="sms:${SMS_NUMBER}?&body=${encodeURIComponent(askText(it))}">Спросить по СМС</a>
         <button class="btn btn--ghost" data-copy>Скопировать артикул</button>
+        <button class="btn btn--ghost" data-share>Поделиться ссылкой на товар</button>
       </div>
       <p class="ask__tip" id="askTip" hidden></p>
       ${related("Для этой же машины", sameCar(it), "Тот же бренд и та же машина — например, вторая сторона, чтобы поменять парой.")}
       ${related("Аналоги других брендов", analogs(it), "Подобраны по коду кузова и месту установки. Точную совместимость сверим по телефону.")}
     </div>`;
-  modal.showModal();
+  history.replaceState(null, "", "#t=" + encodeURIComponent(partKey(it)));
+  if (!modal.open) modal.showModal();
   modal.scrollTop = 0;
 }
+
+// Своя ссылка у каждого товара: бренд + артикул (не меняются при обновлении прайса)
+const partKey = it => it.brand + "~" + it.article;
+const BY_KEY = new Map(ITEMS.map(it => [partKey(it), it]));
+function openFromLink() {
+  const m = location.hash.match(/^#t=(.+)/);
+  const it = m && BY_KEY.get(decodeURIComponent(m[1]));
+  if (it) openPart(it.i);
+}
+// Окно закрыли — убираем товар из адреса страницы
+modal.addEventListener("close", () => history.replaceState(null, "", location.pathname + location.search));
+
+// Амортизаторы, стойки и пружины меняют парой: показываем цену за пару и вторую сторону
+const PAIR_CATS = { 0: "Амортизаторы", 1: "Стойки", 2: "Пружины" };
+function pairOf(it) {
+  if (!it.fits || !(it.place.left || it.place.right)) return null;
+  const base = baseOf(it.fi), p = it.place;
+  return ITEMS.filter(x => x !== it && x.bi === it.bi && x.cat === it.cat &&
+    x.place.left === p.right && x.place.right === p.left && x.place.front === p.front && x.place.rear === p.rear &&
+    baseOf(x.fi) === base).sort((a, b) => a.price - b.price)[0] || null;
+}
+function pairBlock(it) {
+  const what = PAIR_CATS[it.cat];
+  if (!what) return "";
+  const other = pairOf(it);
+  if (other) return `<div class="pair">
+      <p><b>${what} меняют парой</b> — левый и правый на одной оси.</p>
+      <p>Вторая сторона: <button class="pair__link" data-open="${other.i}">${escapeHtml(other.brand)} ${escapeHtml(other.article)}</button>
+        ${other.side ? `<span class="part__side">${escapeHtml(other.side)}</span>` : ""} — ${money(other.price)}</p>
+      <p class="pair__sum">Цена за пару: <b>${money(it.price + other.price)}</b></p>
+      <button class="btn btn--ghost" data-list-pair="${other.i}">Добавить пару в список</button>
+    </div>`;
+  if (it.place.left || it.place.right) return `<div class="pair">
+      <p><b>${what} меняют парой</b> — вторую сторону подберём по телефону.</p></div>`;
+  return `<div class="pair">
+      <p><b>${what} меняют парой</b> — на обе стороны одной оси.</p>
+      <p class="pair__sum">Цена за пару (2 шт.): <b>${money(it.price * 2)}</b></p>
+      <button class="btn btn--ghost" data-list-two>Добавить 2 шт. в список</button>
+    </div>`;
+}
+
+// Список запроса: клиент собирает детали и одним сообщением отправляет маме.
+// Хранится только в браузере клиента (бренд, артикул, количество).
+const LIST_KEY = "ap-list";
+let wish = [];
+try { wish = JSON.parse(localStorage.getItem(LIST_KEY)) || []; } catch { wish = []; }
+wish = wish.filter(w => w && BY_KEY.has(w.k) && w.q > 0);
+const inList = it => wish.find(w => w.k === partKey(it));
+const listBtnText = it => inList(it) ? "✓ В списке — открыть список" : "Добавить в список запроса";
+function saveList() {
+  try { localStorage.setItem(LIST_KEY, JSON.stringify(wish)); } catch { /* приватный режим — список живёт до закрытия страницы */ }
+  renderList();
+}
+function addToList(it, q = 1) {
+  const w = inList(it);
+  if (w) w.q = Math.max(w.q, q); else wish.push({ k: partKey(it), q });
+  saveList();
+}
+const listModal = $("listModal"), listBody = $("listBody"), listFab = $("listFab");
+const listRows = () => wish.map(w => ({ ...w, it: BY_KEY.get(w.k) }));
+const listTotal = () => listRows().reduce((s, r) => s + r.it.price * r.q, 0);
+function listText() {
+  const lines = listRows().map((r, n) => `${n + 1}. ${r.it.brand} ${r.it.article} — ${r.it.name}${r.it.side ? " (" + r.it.side + ")" : ""} — ${r.q} шт. × ${money(r.it.price)}`);
+  return `Здравствуйте! Хочу заказать / уточнить наличие:\n${lines.join("\n")}\nИтого по сайту: ${money(listTotal())}\nСписок с сайта «Амортизаторы-Пружины».`;
+}
+function renderList() {
+  const n = wish.reduce((s, w) => s + w.q, 0);
+  listFab.hidden = !wish.length;
+  $("listCount").textContent = n;
+  if (!listModal.open) return;
+  if (!wish.length) {
+    listBody.innerHTML = `<h2>Список запроса</h2><p class="list__empty">Список пуст. Откройте товар и нажмите «Добавить в список запроса».</p>`;
+    return;
+  }
+  listBody.innerHTML = `
+    <h2>Список запроса</h2>
+    <p class="related__hint">Отправьте список в MAX или по СМС — проверим наличие и ответим.</p>
+    <div class="list">${listRows().map(r => `
+      <div class="list__row">
+        <button class="list__name" data-open-part="${r.it.i}"><b>${escapeHtml(r.it.brand)} ${escapeHtml(r.it.article)}</b>
+          <span>${escapeHtml(r.it.name)}${r.it.side ? ` <span class="part__side">${escapeHtml(r.it.side)}</span>` : ""}</span></button>
+        <div class="list__qty">
+          <button data-minus="${escapeHtml(r.k)}" aria-label="Меньше">−</button><span>${r.q}</span><button data-plus="${escapeHtml(r.k)}" aria-label="Больше">+</button>
+        </div>
+        <span class="list__price">${money(r.it.price * r.q)}</span>
+        <button class="list__del" data-del="${escapeHtml(r.k)}" aria-label="Убрать из списка">×</button>
+      </div>`).join("")}
+    </div>
+    <p class="list__total">Итого: <b>${money(listTotal())}</b></p>
+    <div class="ask">
+      ${MAX_LINK ? `<button class="btn btn--max btn--big" data-list-max>Отправить список в MAX</button>` : ""}
+      <a class="btn btn--ghost" href="sms:${SMS_NUMBER}?&body=${encodeURIComponent(listText())}">Отправить по СМС</a>
+      <button class="btn btn--ghost" data-list-copy>Скопировать список</button>
+      <a class="btn btn--call" href="${PHONE_LINK}">Позвонить: ${PHONE_TEXT}</a>
+      <button class="btn btn--ghost list__clear" data-list-clear>Очистить список</button>
+    </div>
+    <p class="ask__tip" id="listTip" hidden></p>`;
+}
+function openList() {
+  if (modal.open) modal.close();
+  listModal.showModal();
+  renderList();
+}
+listFab.addEventListener("click", openList);
+$("listClose").addEventListener("click", () => listModal.close());
+listModal.addEventListener("click", async e => {
+  if (e.target === listModal) { listModal.close(); return; }
+  const t = e.target.closest("button");
+  if (!t) return;
+  const find = k => wish.find(w => w.k === k);
+  if (t.dataset.plus) { find(t.dataset.plus).q++; saveList(); }
+  else if (t.dataset.minus) { const w = find(t.dataset.minus); if (w.q > 1) { w.q--; saveList(); } }
+  else if (t.dataset.del) { wish = wish.filter(w => w.k !== t.dataset.del); saveList(); }
+  else if (t.dataset.openPart) { listModal.close(); openPart(Number(t.dataset.openPart)); }
+  else if ("listClear" in t.dataset) { if (confirm("Очистить список?")) { wish = []; saveList(); } }
+  else if ("listCopy" in t.dataset || "listMax" in t.dataset) {
+    const tip = $("listTip");
+    try { await navigator.clipboard.writeText(listText()); tip.textContent = "listMax" in t.dataset ? "Список скопирован — вставьте его в чат MAX." : "Список скопирован."; }
+    catch { tip.textContent = listText(); }
+    tip.hidden = false;
+    if ("listMax" in t.dataset) window.open(MAX_LINK, "_blank", "noopener");
+  }
+});
+renderList();
 
 // Текст вопроса маме — сразу с брендом, артикулом и названием
 const askText = it => `Здравствуйте! Есть в наличии ${it.brand} ${it.article} — ${it.name}${it.side ? " (" + it.side + ")" : ""}? Нашёл на сайте «Амортизаторы-Пружины».`;
@@ -400,6 +534,32 @@ modalBody.addEventListener("click", async e => {
   if (open) { openPart(Number(open.dataset.open)); return; }
   const it = byIndex(currentPart);
   const tip = $("askTip");
+  const listBtn = modalBody.querySelector("[data-list]");
+  const added = text => { tip.textContent = text; tip.hidden = false; listBtn.textContent = listBtnText(it); listBtn.classList.add("is-added"); };
+  if (e.target.closest("[data-list]")) {
+    if (inList(it)) { openList(); return; }
+    addToList(it);
+    added("Добавлено в список. Кнопка «Список» — внизу экрана.");
+  }
+  const pairBtn = e.target.closest("[data-list-pair]");
+  if (pairBtn) {
+    addToList(it);
+    addToList(byIndex(Number(pairBtn.dataset.listPair)));
+    added("Пара добавлена в список.");
+  }
+  if (e.target.closest("[data-list-two]")) {
+    addToList(it, 2);
+    added("2 шт. добавлены в список.");
+  }
+  if (e.target.closest("[data-share]")) {
+    const url = location.href, title = `${it.brand} ${it.article} — ${it.name}`;
+    if (navigator.share) {
+      try { await navigator.share({ title, url }); return; } catch (err) { if (err.name === "AbortError") return; }
+    }
+    try { await navigator.clipboard.writeText(url); tip.textContent = "Ссылка на товар скопирована — отправьте её в MAX или СМС."; }
+    catch { tip.textContent = url; }
+    tip.hidden = false;
+  }
   if (e.target.closest("[data-copy]")) {
     try { await navigator.clipboard.writeText(it.article); tip.textContent = `Артикул ${it.article} скопирован.`; }
     catch { tip.textContent = `Артикул: ${it.article}`; }
@@ -424,6 +584,8 @@ $("modalClose").addEventListener("click", () => modal.close());
 modal.addEventListener("click", e => { if (e.target === modal) modal.close(); });
 
 render();
+openFromLink();
+window.addEventListener("hashchange", openFromLink);
 
 // Шапка с анимацией становится белой, как только первый экран уходит под неё
 const header = document.querySelector(".header");

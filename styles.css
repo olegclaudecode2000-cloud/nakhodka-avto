@@ -665,3 +665,44 @@ h1, h2, h3 { line-height: 1.2; margin: 0 0 .5em; }
 .suggest__group { min-width: 56px; color: var(--accent) !important; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; font-size: .7rem !important; }
 .suggest__list--search { left: 0; right: 0; }
 @media (max-width: 520px) { .brand-select .suggest { width: 100%; } }
+
+/* Цена за пару */
+.pair { background: #f6f7f9; border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; margin: 0 0 14px; font-size: .95rem; }
+.pair p { margin: 0 0 6px; }
+.pair__sum { font-size: 1.05rem; }
+.pair__sum b { color: var(--accent); }
+.pair .btn { margin-top: 4px; }
+.pair__link { border: 0; background: none; padding: 0; font: inherit; font-weight: 700; color: var(--accent); text-decoration: underline; cursor: pointer; }
+
+/* Список запроса */
+.btn--list { background: var(--text); color: #fff; }
+.btn--list.is-added { background: var(--green); }
+.list-fab {
+  position: fixed; left: 16px; bottom: 16px; z-index: 20;
+  display: flex; align-items: center; gap: 8px; height: 50px; padding: 0 18px;
+  border: 0; border-radius: 999px; background: var(--text); color: #fff;
+  font: inherit; font-weight: 700; cursor: pointer; box-shadow: 0 6px 18px rgba(10, 12, 16, .35);
+}
+.list-fab svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; }
+.list-fab b { min-width: 24px; height: 24px; padding: 0 6px; border-radius: 12px; background: var(--accent); display: grid; place-items: center; font-size: .85rem; }
+.list { border-top: 1px solid var(--border); margin: 10px 0; }
+.list__row { display: grid; grid-template-columns: 1fr auto auto auto; gap: 8px; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border); }
+.list__name { border: 0; background: none; padding: 0; text-align: left; font: inherit; cursor: pointer; color: inherit; min-width: 0; }
+.list__name b { display: block; }
+.list__name span { font-size: .88rem; color: var(--muted); }
+.list__qty { display: flex; align-items: center; gap: 6px; }
+.list__qty button, .list__del { width: 30px; height: 30px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); font-size: 1.1rem; line-height: 1; cursor: pointer; color: var(--text); }
+.list__qty span { min-width: 18px; text-align: center; font-weight: 700; }
+.list__price { font-weight: 700; white-space: nowrap; }
+.list__del { border: 0; color: var(--muted); }
+.list__total { font-size: 1.2rem; margin: 6px 0 14px; text-align: right; }
+.list__total b { color: var(--accent); }
+.list__empty { color: var(--muted); }
+.list__clear { color: var(--muted); }
+#listModal .modal__close { top: 14px; }
+@media (max-width: 520px) {
+  .list__row { grid-template-columns: 1fr auto auto; }
+  .list__name { grid-column: 1 / -1; }
+  .list__qty { justify-self: start; }
+  .list-fab { height: 48px; padding: 0 16px; }
+}
