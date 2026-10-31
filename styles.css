@@ -756,3 +756,43 @@ h1, h2, h3 { line-height: 1.2; margin: 0 0 .5em; }
 /* Плитки «Другие запчасти» подскакивают при наведении, как главные карточки */
 .hero .tile { transition: border-color .15s, box-shadow .2s, background-color .2s, transform .2s; }
 .hero .tiles__other .tile:hover { transform: translateY(-2px); }
+
+/* ===== Низ сайта: светло-серый каталог + тёмная нижняя часть (цифры, «Не нашли?», «О нас», подвал) ===== */
+body { background: #eceef2; }
+.card { box-shadow: 0 2px 10px rgba(21, 24, 30, .06); }
+.dark-zone, .stats, .request, .about-wrap, .footer { color: #e8eaee; }
+
+/* Полоса с цифрами */
+.stats { background: #15181e; border-top: 3px solid var(--accent); padding: 34px 0; margin-top: 40px; }
+.stats__grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
+.stats__item { display: flex; flex-direction: column; gap: 4px; padding-left: 16px; border-left: 2px solid rgba(255, 255, 255, .12); }
+.stats__item b { font-size: 2rem; font-weight: 800; line-height: 1.1; color: #ff5a5a; letter-spacing: -.01em; }
+.stats__item span { color: #aeb5c0; font-size: .95rem; }
+.stats__item b span { color: inherit; font-size: inherit; }
+
+/* «Не нашли нужную деталь?» — на тёмном фоне */
+.request { background: #15181e; padding: 8px 0 40px; }
+.request__box { box-shadow: 0 12px 30px rgba(0, 0, 0, .4), inset 0 0 0 1px rgba(255, 255, 255, .08); }
+
+/* «О нас» — тёмное, карточки — тёмное стекло */
+.about { max-width: none; background: #1b1f27; padding: 48px max(16px, calc((100% - 1128px) / 2)) 56px; margin: 0; }
+.about h2 { color: #fff; }
+.about__item { background: rgba(255, 255, 255, .05); border: 1px solid rgba(255, 255, 255, .1); }
+.about__item h3 { color: #fff; }
+.about__item p { color: #b9c0ca; }
+.about__photo { box-shadow: 0 12px 30px rgba(0, 0, 0, .4); }
+
+/* Подвал — самый тёмный */
+.footer { background: #0f1115; border-top: 1px solid rgba(255, 255, 255, .08); }
+.footer h3 { color: #8f97a3; }
+.footer__muted, .footer__credits { color: #8f97a3; }
+.footer__max { color: #a5a0ff; }
+.footer__partner { background: rgba(255, 255, 255, .06); box-shadow: inset 0 0 0 1px rgba(255, 176, 32, .35); }
+.footer__partner:hover { box-shadow: inset 0 0 0 1px rgba(255, 176, 32, .7), 0 10px 24px rgba(0, 0, 0, .4); }
+.logo--dark { color: #fff; }
+
+@media (max-width: 820px) {
+  .stats__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px 12px; }
+  .stats__item b { font-size: 1.5rem; }
+  .about { padding: 36px 16px 44px; }
+}
