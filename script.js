@@ -251,7 +251,9 @@ brandSelect.addEventListener("change", () => { state.brand = brandSelect.value; 
 
 $("searchForm").addEventListener("submit", e => {
   e.preventDefault();
+  clearTimeout(typing);
   state.query = searchInput.value;
+  searchInput.blur(); // спрятать клавиатуру телефона, чтобы она не закрывала результаты
   reset();
   toCatalog();
 });
