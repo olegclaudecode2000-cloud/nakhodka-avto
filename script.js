@@ -258,7 +258,6 @@ const tile = n => `
   <button class="tile" data-cat="${n}">
     ${tileMedia(n)}
     <span>${escapeHtml(PART_CATEGORIES[n])}</span>
-    <small>${catCount[n].toLocaleString("ru-RU")}</small>
   </button>`;
 $("tiles").innerHTML = `
   <p class="tiles__label">Наша специализация</p>
