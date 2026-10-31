@@ -753,3 +753,6 @@ h1, h2, h3 { line-height: 1.2; margin: 0 0 .5em; }
   .hero .tiles__other .tile__icon { width: 46px; height: 46px; }
   .hero .tiles__other .tile__icon svg { width: 26px; height: 26px; }
 }
+/* Плитки «Другие запчасти» подскакивают при наведении, как главные карточки */
+.hero .tile { transition: border-color .15s, box-shadow .2s, background-color .2s, transform .2s; }
+.hero .tiles__other .tile:hover { transform: translateY(-2px); }
