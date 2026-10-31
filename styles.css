@@ -821,3 +821,7 @@ body { background: #eceef2; }
   .hero > .container > *, .grid > .card { animation: none; }
   .reveal { opacity: 1; transform: none; }
 }
+
+/* Правовая строка в подвале */
+.footer__legal { margin-top: 20px; font-size: .78rem; color: #8f97a3; }
+.footer__legal a { color: inherit; }
