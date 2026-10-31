@@ -737,18 +737,19 @@ h1, h2, h3 { line-height: 1.2; margin: 0 0 .5em; }
 .car-logo--isuzu { width: 46px; height: 10px; }
 .car-logo--kia, .car-logo--hyundai { width: 24px; }
 
-/* «Другие запчасти»: тёмное стекло, как у главных карточек; фото детали на светлом кружке */
-.hero .tiles__other .tile {
-  background: rgba(255, 255, 255, .07); color: #fff; border: 0;
-  -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .14), 0 8px 22px rgba(0, 0, 0, .3);
-}
-.hero .tiles__other .tile:hover { background: rgba(255, 255, 255, .11); box-shadow: inset 0 0 0 1px rgba(227, 43, 43, .7), 0 10px 26px rgba(227, 43, 43, .25); }
-.hero .tiles__other .tile__media { border-radius: 50%; padding: 10px; background: radial-gradient(circle at 50% 38%, #ffffff, #dfe3e8); box-shadow: 0 4px 14px rgba(0, 0, 0, .35); }
-.hero .tiles__other .tile__media img { filter: drop-shadow(0 4px 4px rgba(15, 18, 24, .25)); }
-/* Значки без фото — графитовые на том же кружке */
-.hero .tiles__other .tile__icon { width: 100%; height: 100%; background: none; box-shadow: none; color: #3a3f48; }
-.hero .tiles__other .tile__icon svg { width: 60%; height: 60%; }
+/* «Другие запчасти»: тёмные плитки, фото детали в светлом окне на всю ширину */
+.hero .tiles__other .tile { background: rgba(255, 255, 255, .07); color: #fff; border: 0; padding: 8px 8px 12px;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .14), 0 8px 22px rgba(0, 0, 0, .3); }
+.hero .tiles__other .tile:hover { box-shadow: inset 0 0 0 1px rgba(227, 43, 43, .7), 0 10px 26px rgba(227, 43, 43, .25); }
+.hero .tiles__other .tile__media { position: relative; display: block; width: 100%; height: 96px; border-radius: 10px;
+  background: linear-gradient(180deg, #ffffff, #e6e9ee); }
+.hero .tiles__other .tile__media img { position: absolute; inset: 8px; width: calc(100% - 16px); height: calc(100% - 16px); }
+/* Где фото пока нет — красный значок, как раньше, по центру окна */
+.hero .tiles__other .tile__icon { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: 56px; height: 56px; }
+.hero .tiles__other .tile__icon svg { width: 32px; height: 32px; }
 @media (max-width: 520px) {
-  .hero .tiles__other .tile__media { padding: 7px; }
+  .hero .tiles__other .tile__media { height: 74px; }
+  .hero .tiles__other .tile__media img { inset: 6px; width: calc(100% - 12px); height: calc(100% - 12px); }
+  .hero .tiles__other .tile__icon { width: 46px; height: 46px; }
+  .hero .tiles__other .tile__icon svg { width: 26px; height: 26px; }
 }
