@@ -505,3 +505,20 @@ h1, h2, h3 { line-height: 1.2; margin: 0 0 .5em; }
   .header, .header .nav a, .header::after { transition: none; }
   .header--light .logo__mark, .header--light .header__call { animation: none; }
 }
+
+/* Большой каталог: «В наличии», «Распродажа», 16 разделов */
+.part__badges { display: flex; flex-wrap: wrap; gap: 6px; }
+.badge--sale { background: var(--accent); color: #fff; }
+.modal__price .badge, .modal__note .badge { vertical-align: middle; font-size: .8rem; }
+.chip--sale { border-color: var(--accent); color: var(--accent); font-weight: 700; }
+.chip--sale.is-active { color: #fff; }
+.hero .tiles { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
+.tile span:not(.tile__icon) { line-height: 1.2; }
+@media (max-width: 520px) {
+  .hero .tiles { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+  .hero .tile { padding: 10px 4px 8px; font-size: .78rem; }
+  .hero .tile__icon { width: 36px; height: 36px; }
+  .hero .tile__icon svg { width: 22px; height: 22px; }
+  #categoryChips { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 4px; }
+  #categoryChips .chip { flex: none; }
+}
