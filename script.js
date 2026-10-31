@@ -595,10 +595,18 @@ render();
 openFromLink();
 window.addEventListener("hashchange", openFromLink);
 
-// Шапка с анимацией становится белой, как только первый экран уходит под неё
+// Шапка с анимацией белая только над светлым каталогом; над тёмным верхом и тёмным низом — снова тёмная
 const header = document.querySelector(".header");
-const hero = document.querySelector(".hero");
-if (header && hero && "IntersectionObserver" in window) {
-  new IntersectionObserver(([e]) => header.classList.toggle("header--light", !e.isIntersecting),
-    { rootMargin: `-${header.offsetHeight}px 0px 0px 0px` }).observe(hero);
+const lightFrom = document.getElementById("catalog"), darkFrom = document.querySelector(".stats");
+if (header && lightFrom && darkFrom) {
+  let ticking = false;
+  const update = () => {
+    ticking = false;
+    const y = header.offsetHeight;
+    header.classList.toggle("header--light", lightFrom.getBoundingClientRect().top < y && darkFrom.getBoundingClientRect().top > y);
+  };
+  const onScroll = () => { if (!ticking) { ticking = true; requestAnimationFrame(update); } };
+  addEventListener("scroll", onScroll, { passive: true });
+  addEventListener("resize", onScroll);
+  update();
 }
