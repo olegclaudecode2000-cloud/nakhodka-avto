@@ -823,5 +823,5 @@ body { background: #eceef2; }
 }
 
 /* Правовая строка в подвале */
-.footer__legal { margin-top: 20px; font-size: .78rem; color: #8f97a3; }
+.footer .footer__legal { margin: 20px auto 0; font-size: .78rem; color: #8f97a3; } /* .footer p обнулял отступ «auto» у .container */
 .footer__legal a { color: inherit; }
