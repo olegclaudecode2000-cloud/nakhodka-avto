@@ -53,7 +53,10 @@ const ITEMS = D.p.map((r, i) => ({
   extra: r[8], art: norm(r[2]), isMain: MAIN_BRAND[r[1]], place: SIDE_PLACE[r[4]],
 }));
 // Сначала KYB и OBK — основное в магазине (остальное уже отсортировано по разделам и брендам)
-ITEMS.sort((a, b) => (b.isMain - a.isMain) || a.cat - b.cat);
+// Главное в магазине — амортизаторы, стойки и пружины: они первыми, внутри них сначала KYB и OBK
+const MAIN_CATS = [0, 1, 2];
+const isMainCat = it => MAIN_CATS.includes(it.cat);
+ITEMS.sort((a, b) => (isMainCat(b) - isMainCat(a)) || (b.isMain - a.isMain) || a.cat - b.cat);
 
 // Марки и модели для подбора «марка → модель»
 const MODELS = {
@@ -165,7 +168,7 @@ function renderChips() {
   $("categoryChips").innerHTML =
     `<button class="chip ${state.cat === null && !state.sale ? "is-active" : ""}" data-cat="">Все разделы</button>` +
     (SALE_COUNT ? `<button class="chip chip--sale ${state.sale ? "is-active" : ""}" data-sale>Распродажа (${SALE_COUNT})</button>` : "") +
-    PART_CATEGORIES.map((c, n) => `<button class="chip ${state.cat === n ? "is-active" : ""}" data-cat="${n}">${escapeHtml(c)}</button>`).join("");
+    PART_CATEGORIES.map((c, n) => `<button class="chip${MAIN_CATS.includes(n) ? " chip--main" : ""} ${state.cat === n ? "is-active" : ""}" data-cat="${n}">${escapeHtml(c)}</button>`).join("");
   $("carChips").innerHTML = `<span class="chips__label">Машина:</span>` +
     ["", ...CARS].map(c => `<button class="chip chip--small ${state.car === c ? "is-active" : ""}" data-car="${c}">${c || "Любая"}</button>`).join("");
   const models = state.car ? MODELS[state.car].filter(m => (modelData(m), MODEL_COUNT[m] > 0)) : [];
@@ -193,12 +196,32 @@ const toCatalog = () => $("catalog").scrollIntoView({ behavior: "smooth" });
 
 // Плитки разделов на первом экране
 const catCount = PART_CATEGORIES.map((_, n) => ITEMS.filter(it => it.cat === n).length);
-$("tiles").innerHTML = PART_CATEGORIES.map((c, n) => `
+// Главные разделы — большие карточки с брендами, остальное — обычные плитки ниже
+const topBrands = n => {
+  const c = {};
+  ITEMS.forEach(it => { if (it.cat === n) c[it.brand] = (c[it.brand] || 0) + 1; });
+  const order = Object.keys(c).sort((a, b) => (/^(kyb|obk)$/i.test(b) - /^(kyb|obk)$/i.test(a)) || c[b] - c[a]);
+  return order.slice(0, 3).join(", ");
+};
+const tile = n => `
   <button class="tile" data-cat="${n}">
     <span class="tile__icon">${ICONS[n]}</span>
-    <span>${escapeHtml(c)}</span>
+    <span>${escapeHtml(PART_CATEGORIES[n])}</span>
     <small>${catCount[n].toLocaleString("ru-RU")}</small>
-  </button>`).join("");
+  </button>`;
+$("tiles").innerHTML = `
+  <p class="tiles__label">Наша специализация</p>
+  <div class="tiles__main">${MAIN_CATS.map(n => `
+    <button class="tile tile--main" data-cat="${n}">
+      <span class="tile__icon">${ICONS[n]}</span>
+      <span class="tile--main__text">
+        <span class="tile--main__title">${escapeHtml(PART_CATEGORIES[n])}</span>
+        <span class="tile--main__brands">${escapeHtml(topBrands(n))}</span>
+        <span class="tile--main__count">${catCount[n].toLocaleString("ru-RU")} шт. →</span>
+      </span>
+    </button>`).join("")}</div>
+  <p class="tiles__label tiles__label--other">Другие запчасти</p>
+  <div class="tiles__other">${PART_CATEGORIES.map((_, n) => n).filter(n => !MAIN_CATS.includes(n)).map(tile).join("")}</div>`;
 $("tiles").addEventListener("click", e => {
   const t = e.target.closest(".tile");
   if (!t) return;
