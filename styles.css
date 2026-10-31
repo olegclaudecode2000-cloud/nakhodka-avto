@@ -522,3 +522,24 @@ h1, h2, h3 { line-height: 1.2; margin: 0 0 .5em; }
   #categoryChips { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 4px; }
   #categoryChips .chip { flex: none; }
 }
+
+/* Кнопки MAX */
+.btn--max svg { width: 18px; height: 18px; fill: currentColor; }
+.btn--max:hover { background: #6366f1; }
+.header__max { margin-left: 0; padding: 10px 14px; }
+.hero__actions, .request__actions { display: flex; flex-wrap: wrap; gap: 10px; margin: 18px 0 4px; }
+.request__actions { margin: 0; }
+.footer__max { color: #4f46e5; font-weight: 700; text-decoration: none; }
+.empty .btn--max { margin-left: 6px; }
+@media (max-width: 820px) {
+  .header__max { margin-left: auto; padding: 10px 12px; min-width: 44px; min-height: 44px; }
+  .header__max span { display: none; }
+  .header__max:not([hidden]) + .header__call { margin-left: 8px; }
+  .hero__actions .btn { flex: 1; }
+}
+@media (max-width: 520px) {
+  .header__row { gap: 8px; }
+  .logo { font-size: .88rem; gap: 6px; min-width: 0; }
+  .logo__text { overflow: hidden; text-overflow: ellipsis; }
+  .header__max, .header__call { padding: 8px 10px; }
+}

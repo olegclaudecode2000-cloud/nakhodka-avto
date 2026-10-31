@@ -45,7 +45,7 @@
   }
   </script>
 
-  <link rel="stylesheet" href="styles.css?v=20261031p">
+  <link rel="stylesheet" href="styles.css?v=20261031r">
 </head>
 <body>
 
@@ -60,6 +60,10 @@
         <a href="#about">О нас</a>
         <a href="#contacts">Контакты</a>
       </nav>
+      <a class="btn btn--max header__max" data-max href="#" target="_blank" rel="noopener" aria-label="Написать в MAX" hidden>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3C7 3 3 6.6 3 11c0 2.4 1.2 4.6 3.1 6L5 21l4.3-2.3c.9.2 1.8.3 2.7.3 5 0 9-3.6 9-8s-4-8-9-8z"/></svg>
+        <span>MAX</span>
+      </a>
       <a class="btn btn--call header__call" href="tel:+79147036933">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.6 10.8a15.1 15.1 0 0 0 6.6 6.6l2.2-2.2a1 1 0 0 1 1-.25 11.4 11.4 0 0 0 3.6.57 1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.45.57 3.57a1 1 0 0 1-.25 1L6.6 10.8z"/></svg>
         <span>8 914 703-69-33</span>
@@ -75,6 +79,10 @@
         <input id="searchInput" type="search" placeholder="Артикул, название или машина: KYB 334, Camry, Fielder…" autocomplete="off" aria-label="Поиск по каталогу">
         <button class="btn btn--accent" type="submit">Найти</button>
       </form>
+      <div class="hero__actions">
+        <a class="btn btn--accent" href="tel:+79147036933">Позвонить</a>
+        <a class="btn btn--max" data-max href="#" target="_blank" rel="noopener" hidden>Написать в MAX</a>
+      </div>
       <div class="tiles" id="tiles"></div>
     </div>
   </section>
@@ -99,8 +107,9 @@
     <button class="btn btn--ghost more" id="moreBtn" hidden></button>
     <div class="empty" id="emptyState" hidden>
       <p><b>Ничего не нашлось.</b></p>
-      <p>Скорее всего, нужная деталь есть или привезём под заказ. Позвоните и назовите машину или артикул.</p>
+      <p>Скорее всего, нужная деталь есть или привезём под заказ. Позвоните или напишите в MAX — назовите машину или артикул.</p>
       <a class="btn btn--call" href="tel:+79147036933">Позвонить: 8 914 703-69-33</a>
+      <a class="btn btn--max" data-max href="#" target="_blank" rel="noopener" hidden>Написать в MAX</a>
     </div>
   </main>
 
@@ -110,7 +119,10 @@
         <h2>Не нашли нужную деталь?</h2>
         <p>На сайте — то, что есть в наличии. Позвоните, назовите марку, модель и год машины — подберём и проверим наличие.</p>
       </div>
-      <a class="btn btn--accent btn--big" href="tel:+79147036933">Позвонить</a>
+      <div class="request__actions">
+        <a class="btn btn--accent btn--big" href="tel:+79147036933">Позвонить</a>
+        <a class="btn btn--max btn--big" data-max href="#" target="_blank" rel="noopener" hidden>Написать в MAX</a>
+      </div>
     </div>
   </section>
 
@@ -146,6 +158,7 @@
       <div>
         <h3>Телефон</h3>
         <a class="footer__phone" href="tel:+79147036933">8 914 703-69-33</a>
+        <p><a class="footer__max" data-max href="#" target="_blank" rel="noopener" hidden>Написать в MAX →</a></p>
       </div>
       <div>
         <h3>Где нас найти</h3>
@@ -165,6 +178,6 @@
   </dialog>
 
   <script src="data/parts.js?v=20261031b"></script>
-  <script src="script.js?v=20261031h"></script>
+  <script src="script.js?v=20261031i"></script>
 </body>
 </html>

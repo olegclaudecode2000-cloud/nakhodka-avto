@@ -32,6 +32,9 @@ const ICONS = [
   svg('<rect x="4" y="4" width="16" height="16" rx="3"/><path d="M9 9h6v6H9z"/>'),
 ];
 
+// Кнопки «Написать в MAX» на странице появляются, только когда задана ссылка
+if (MAX_LINK) document.querySelectorAll("[data-max]").forEach(el => { el.href = MAX_LINK; el.hidden = false; });
+
 // Данные из прайсов: словари + строки [раздел, бренд#, артикул, название#, сторона#, применимость#, цена, распродажа, номера]
 const D = PARTS_DATA;
 const PART_CATEGORIES = D.c, PARTS_UPDATED = D.u;
