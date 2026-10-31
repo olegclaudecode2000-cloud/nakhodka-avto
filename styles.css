@@ -796,3 +796,6 @@ body { background: #eceef2; }
   .stats__item b { font-size: 1.5rem; }
   .about { padding: 36px 16px 44px; }
 }
+.stats__item--link { text-decoration: none; border-radius: 0 10px 10px 0; transition: background-color .2s; }
+.stats__item--link:hover { background: rgba(227, 43, 43, .12); }
+.stats__item--link span { color: #ffb3b3; }
