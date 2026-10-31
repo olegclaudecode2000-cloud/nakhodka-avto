@@ -718,3 +718,13 @@ h1, h2, h3 { line-height: 1.2; margin: 0 0 .5em; }
 .footer__credits summary { cursor: pointer; }
 .footer__credits ul { margin: 6px 0 0; padding-left: 18px; }
 .footer__credits a { color: inherit; }
+
+/* Главные карточки: фото детали на светлом квадрате (амортизатор и пружины — фото из магазина мамы) */
+.tile__thumb { flex: none; width: 76px; height: 76px; border-radius: 14px; overflow: hidden; display: grid; place-items: center;
+  background: radial-gradient(circle at 50% 40%, #ffffff, #e4e7ec); box-shadow: 0 4px 14px rgba(0, 0, 0, .35); }
+.tile__thumb img { width: 92%; height: 92%; object-fit: contain; filter: drop-shadow(0 4px 4px rgba(15, 18, 24, .25)); transition: transform .2s; }
+.tile__thumb--photo img { width: 100%; height: 100%; object-fit: cover; filter: none; }
+.tile--main:hover .tile__thumb img { transform: scale(1.06); }
+@media (max-width: 520px) {
+  .tile__thumb { width: 60px; height: 60px; border-radius: 12px; }
+}

@@ -260,7 +260,7 @@ $("tiles").innerHTML = `
   <p class="tiles__label">Наша специализация</p>
   <div class="tiles__main">${MAIN_CATS.map(n => `
     <button class="tile tile--main" data-cat="${n}">
-      <span class="tile__icon">${ICONS[n]}</span>
+      <span class="tile__thumb${n === 2 ? " tile__thumb--photo" : ""}"><img src="images/cat/${String(n).padStart(2, "0")}.webp" alt="" width="520" height="520"></span>
       <span class="tile--main__text">
         <span class="tile--main__title">${escapeHtml(PART_CATEGORIES[n])}</span>
         <span class="tile--main__brands">${escapeHtml(topBrands(n))}</span>
