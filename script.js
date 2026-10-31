@@ -245,9 +245,14 @@ const topBrands = n => {
   const order = Object.keys(c).sort((a, b) => (/^(kyb|obk)$/i.test(b) - /^(kyb|obk)$/i.test(a)) || c[b] - c[a]);
   return order.slice(0, 3).join(", ");
 };
+// Фото разделов (деталь без фона, images/cat/NN.webp); где фото нет — значок
+const CAT_PHOTOS = [3, 4, 5, 8, 9, 10, 11, 12, 13, 14];
+const tileMedia = n => CAT_PHOTOS.includes(n)
+  ? `<span class="tile__media"><img src="images/cat/${String(n).padStart(2, "0")}.webp" alt="" width="520" height="520" loading="lazy"></span>`
+  : `<span class="tile__media"><span class="tile__icon">${ICONS[n]}</span></span>`;
 const tile = n => `
   <button class="tile" data-cat="${n}">
-    <span class="tile__icon">${ICONS[n]}</span>
+    ${tileMedia(n)}
     <span>${escapeHtml(PART_CATEGORIES[n])}</span>
     <small>${catCount[n].toLocaleString("ru-RU")}</small>
   </button>`;

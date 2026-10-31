@@ -706,3 +706,15 @@ h1, h2, h3 { line-height: 1.2; margin: 0 0 .5em; }
   .list__qty { justify-self: start; }
   .list-fab { height: 48px; padding: 0 16px; }
 }
+
+/* Фото разделов: одинаковое место под фото или значок, деталь с мягкой тенью */
+.tile__media { display: grid; place-items: center; width: 92px; height: 92px; flex: none; }
+.tile__media img { width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 6px 6px rgba(15, 18, 24, .22)); transition: transform .2s; }
+.tile:hover .tile__media img { transform: scale(1.06); }
+@media (max-width: 520px) {
+  .tile__media { width: 68px; height: 68px; }
+}
+.footer__credits { margin-top: 20px; font-size: .78rem; color: var(--muted); }
+.footer__credits summary { cursor: pointer; }
+.footer__credits ul { margin: 6px 0 0; padding-left: 18px; }
+.footer__credits a { color: inherit; }
