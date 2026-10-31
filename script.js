@@ -112,7 +112,7 @@ const state = { cat: null, car: "", model: "", brand: "", sale: false, query: ""
 
 const $ = id => document.getElementById(id);
 const grid = $("productGrid"), count = $("catalogCount"), empty = $("emptyState"), moreBtn = $("moreBtn");
-const searchInput = $("searchInput"), brandSelect = $("brandSelect");
+const searchInput = $("searchInput"), brandInput = $("brandInput");
 const SALE_COUNT = ITEMS.filter(it => it.sale).length;
 
 // Цифры в шапке
@@ -125,7 +125,43 @@ const brandCount = {};
 ITEMS.forEach(it => { brandCount[it.brand] = (brandCount[it.brand] || 0) + 1; });
 const brandOrder = Object.keys(brandCount).sort((a, b) =>
   (/^(kyb|obk)$/i.test(b) - /^(kyb|obk)$/i.test(a)) || brandCount[b] - brandCount[a]);
-brandSelect.innerHTML += brandOrder.map(b => `<option value="${escapeHtml(b)}">${escapeHtml(b)} (${brandCount[b]})</option>`).join("");
+
+// Подсказки при вводе: список под полем, выбор пальцем или мышкой
+function suggest(input, list, getItems, onPick) {
+  let items = [];
+  const show = () => {
+    items = getItems(input.value.trim().toLowerCase());
+    list.innerHTML = items.map((it, n) => `<button type="button" class="suggest__item" data-n="${n}">
+      ${it.group ? `<small class="suggest__group">${escapeHtml(it.group)}</small>` : ""}
+      <span>${escapeHtml(it.label)}</span>${it.count != null ? `<small>${it.count.toLocaleString("ru-RU")}</small>` : ""}</button>`).join("");
+    list.hidden = !items.length;
+  };
+  input.addEventListener("input", show);
+  input.addEventListener("focus", show);
+  // mousedown срабатывает раньше, чем поле теряет фокус, — выбор не теряется
+  list.addEventListener("mousedown", e => e.preventDefault());
+  list.addEventListener("click", e => {
+    const b = e.target.closest("[data-n]");
+    if (!b) return;
+    list.hidden = true;
+    onPick(items[Number(b.dataset.n)]);
+  });
+  input.addEventListener("blur", () => setTimeout(() => { list.hidden = true; }, 150));
+  input.addEventListener("keydown", e => { if (e.key === "Escape") list.hidden = true; });
+}
+
+// Бренд: вводите часть названия — сайт предлагает подходящие (KYB и OBK первыми)
+suggest(brandInput, $("brandList"), q => {
+  const found = brandOrder.filter(b => !q || b.toLowerCase().includes(q))
+    .sort((a, b) => (q ? (b.toLowerCase().startsWith(q) - a.toLowerCase().startsWith(q)) : 0));
+  return [{ label: "Все бренды", value: "" }, ...found.slice(0, 40).map(b => ({ label: b, value: b, count: brandCount[b] }))];
+}, it => {
+  state.brand = it.value;
+  brandInput.value = it.value;
+  brandInput.blur();
+  reset();
+});
+brandInput.addEventListener("search", () => { if (!brandInput.value && state.brand) { state.brand = ""; reset(); } });
 
 // Каждое слово запроса должно найтись хоть где-то: бренд, артикул, название, сторона, машина, раздел, номера
 function hasWord(it, w) {
@@ -175,7 +211,7 @@ function renderChips() {
   $("modelRow").hidden = !models.length;
   $("modelSelect").innerHTML = `<option value="">Все модели ${state.car}</option>` +
     models.map(m => `<option value="${m}"${state.model === m ? " selected" : ""}>${m} (${MODEL_COUNT[m]})</option>`).join("");
-  brandSelect.value = state.brand;
+  if (document.activeElement !== brandInput) brandInput.value = state.brand;
 }
 
 function render() {
@@ -247,7 +283,33 @@ $("carChips").addEventListener("click", e => {
   reset();
 });
 $("modelSelect").addEventListener("change", e => { state.model = e.target.value; reset(); });
-brandSelect.addEventListener("change", () => { state.brand = brandSelect.value; reset(); });
+brandInput.addEventListener("input", () => { if (!brandInput.value && state.brand) { state.brand = ""; reset(); } });
+
+// Главный поиск: подсказки — разделы, бренды и машины, которые подходят к введённому
+const ALL_MODELS = CARS.flatMap(c => MODELS[c].map(m => ({ car: c, model: m })));
+suggest(searchInput, $("searchList"), q => {
+  if (q.length < 2) return [];
+  const out = [];
+  PART_CATEGORIES.forEach((c, n) => { if (c.toLowerCase().includes(q)) out.push({ group: "Раздел", label: c, count: catCount[n], cat: n }); });
+  brandOrder.filter(b => b.toLowerCase().startsWith(q)).slice(0, 4)
+    .forEach(b => out.push({ group: "Бренд", label: b, count: brandCount[b], brand: b }));
+  CARS.filter(c => c.toLowerCase().startsWith(q)).forEach(c => out.push({ group: "Марка", label: c, car: c }));
+  ALL_MODELS.filter(x => x.model.toLowerCase().startsWith(q)).slice(0, 4)
+    .forEach(x => out.push({ group: "Машина", label: `${x.car} ${x.model}`, car: x.car, model: x.model }));
+  return out.slice(0, 8);
+}, it => {
+  // Выбор из подсказки — новый поиск: старые фильтры сбрасываем, ставим только выбранный
+  clearTimeout(typing);
+  Object.assign(state, { cat: null, car: "", model: "", brand: "", sale: false });
+  if (it.cat != null) state.cat = it.cat;
+  if (it.brand) state.brand = it.brand;
+  if (it.car) { state.car = it.car; state.model = it.model || ""; }
+  state.query = "";
+  searchInput.value = "";
+  searchInput.blur();
+  reset();
+  toCatalog();
+});
 
 $("searchForm").addEventListener("submit", e => {
   e.preventDefault();

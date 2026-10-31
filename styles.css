@@ -641,3 +641,27 @@ h1, h2, h3 { line-height: 1.2; margin: 0 0 .5em; }
 .tile--main__brands { color: #cfd3da; opacity: 1; }
 .tile--main__count { background: rgba(227, 43, 43, .2); color: #ff9a9a; }
 .hero .tile--main, .hero .tile--main .tile--main__title { color: #fff; }
+
+/* Подсказки при вводе (бренд и главный поиск) */
+.suggest { position: relative; flex: 1; min-width: 0; display: block; }
+.brand-select .suggest input {
+  width: 100%; font: inherit; color: var(--text); background: var(--surface); border: 1px solid var(--border);
+  border-radius: 10px; padding: 8px 10px; min-height: 40px;
+}
+.brand-select .suggest input:focus { outline: none; border-color: var(--accent); }
+.search { position: relative; }
+.suggest__list {
+  position: absolute; z-index: 30; left: 0; right: 0; top: calc(100% + 6px); max-height: 320px; overflow-y: auto;
+  background: #fff; color: var(--text); border: 1px solid var(--border); border-radius: 12px;
+  box-shadow: 0 16px 40px rgba(21, 24, 30, .22); padding: 6px; display: grid; gap: 2px;
+}
+.suggest__item {
+  display: flex; align-items: center; gap: 10px; width: 100%; min-height: 44px; padding: 8px 10px; border: 0; border-radius: 8px;
+  background: none; font: inherit; color: inherit; text-align: left; cursor: pointer;
+}
+.suggest__item:hover, .suggest__item:focus-visible { background: var(--accent-soft); outline: none; }
+.suggest__item span { flex: 1; min-width: 0; font-weight: 600; }
+.suggest__item small { color: var(--muted); font-size: .8rem; }
+.suggest__group { min-width: 56px; color: var(--accent) !important; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; font-size: .7rem !important; }
+.suggest__list--search { left: 0; right: 0; }
+@media (max-width: 520px) { .brand-select .suggest { width: 100%; } }

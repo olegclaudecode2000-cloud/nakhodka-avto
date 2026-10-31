@@ -46,7 +46,7 @@
   }
   </script>
 
-  <link rel="stylesheet" href="styles.css?v=20261031z2">
+  <link rel="stylesheet" href="styles.css?v=20261031z3">
 </head>
 <body>
 
@@ -78,6 +78,7 @@
       <p class="hero__sub">KYB, OBK и ещё <span data-brands>десятки</span> брендов. <b data-total>2 500</b> позиций с ценами, поиск по артикулу и по машине. 19 лет на Фарпосте.</p>
       <form class="search" id="searchForm" role="search">
         <input id="searchInput" type="search" enterkeyhint="search" placeholder="Артикул, название или машина: KYB 334, Camry, Fielder…" autocomplete="off" aria-label="Поиск по каталогу">
+        <span class="suggest__list suggest__list--search" id="searchList" role="listbox" hidden></span>
         <button class="btn btn--accent" type="submit">Найти</button>
       </form>
       <div class="hero__actions">
@@ -100,7 +101,10 @@
         <select id="modelSelect"></select>
       </label>
       <label class="brand-select">Бренд:
-        <select id="brandSelect"><option value="">Все бренды</option></select>
+        <span class="suggest">
+          <input id="brandInput" type="search" enterkeyhint="done" placeholder="Все бренды — начните вводить" autocomplete="off" aria-label="Бренд">
+          <span class="suggest__list" id="brandList" role="listbox" hidden></span>
+        </span>
       </label>
     </div>
     <p class="catalog__count" id="catalogCount"></p>
@@ -179,6 +183,6 @@
   </dialog>
 
   <script src="data/parts.js?v=20261031b"></script>
-  <script src="script.js?v=20261031l"></script>
+  <script src="script.js?v=20261031n"></script>
 </body>
 </html>
