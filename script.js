@@ -80,6 +80,10 @@ const MODELS = {
   Kia: ["Sorento", "Soul", "Venga", "Rio", "Sportage", "Ceed", "Optima"],
 };
 const CARS = Object.keys(MODELS);
+// Логотипы марок (images/cars): одноцветные, окрашиваются цветом текста кнопки
+const CAR_LOGO = { Toyota: "toyota.svg", Nissan: "nissan.svg", Honda: "honda.svg", Mazda: "mazda.svg", Mitsubishi: "mitsubishi.svg",
+  Subaru: "subaru.svg", Suzuki: "suzuki.svg", Lexus: "lexus.png", Daihatsu: "daihatsu.png", Isuzu: "isuzu.png", Hyundai: "hyundai.svg", Kia: "kia.svg" };
+const carLogo = c => CAR_LOGO[c] ? `<span class="car-logo car-logo--${c.toLowerCase()}" style="--logo:url(images/cars/${CAR_LOGO[c]})" aria-hidden="true"></span>` : "";
 // Марки по каждой строке применимости (считаем один раз на уникальную строку)
 const FITS_CARS = FITS_L.map(f => CARS.filter(c => f.includes(c.toLowerCase())));
 ITEMS.forEach(it => { it.cars = FITS_CARS[it.fi]; });
@@ -212,7 +216,7 @@ function renderChips() {
     (SALE_COUNT ? `<button class="chip chip--sale ${state.sale ? "is-active" : ""}" data-sale>Распродажа (${SALE_COUNT})</button>` : "") +
     PART_CATEGORIES.map((c, n) => `<button class="chip${MAIN_CATS.includes(n) ? " chip--main" : ""} ${state.cat === n ? "is-active" : ""}" data-cat="${n}">${escapeHtml(c)}</button>`).join("");
   $("carChips").innerHTML = `<span class="chips__label">Машина:</span>` +
-    ["", ...CARS].map(c => `<button class="chip chip--small ${state.car === c ? "is-active" : ""}" data-car="${c}">${c || "Любая"}</button>`).join("");
+    ["", ...CARS].map(c => `<button class="chip chip--small chip--car ${state.car === c ? "is-active" : ""}" data-car="${c}">${carLogo(c)}${c || "Любая"}</button>`).join("");
   const models = state.car ? MODELS[state.car].filter(m => (modelData(m), MODEL_COUNT[m] > 0)) : [];
   $("modelRow").hidden = !models.length;
   $("modelSelect").innerHTML = `<option value="">Все модели ${state.car}</option>` +

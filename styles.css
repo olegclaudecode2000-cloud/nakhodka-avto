@@ -728,3 +728,11 @@ h1, h2, h3 { line-height: 1.2; margin: 0 0 .5em; }
 @media (max-width: 520px) {
   .tile__thumb { width: 60px; height: 60px; border-radius: 12px; }
 }
+
+/* Логотипы марок в выборе машины */
+.chip--car { display: inline-flex; align-items: center; gap: 6px; }
+.car-logo { width: 18px; height: 18px; flex: none; background: currentColor;
+  -webkit-mask: var(--logo) center / contain no-repeat; mask: var(--logo) center / contain no-repeat; }
+.car-logo--lexus { width: 22px; }
+.car-logo--isuzu { width: 46px; height: 10px; }
+.car-logo--kia, .car-logo--hyundai { width: 24px; }
