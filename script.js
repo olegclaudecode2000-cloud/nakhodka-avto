@@ -297,14 +297,6 @@ $("carChips").addEventListener("click", e => {
   reset();
 });
 $("modelSelect").addEventListener("change", e => { state.model = e.target.value; reset(); });
-// Цифра «на распродаже» в полосе под каталогом — по нажатию открывает распродажу
-document.querySelectorAll("[data-sale-count]").forEach(el => el.textContent = SALE_COUNT.toLocaleString("ru-RU"));
-document.querySelectorAll("[data-sale-link]").forEach(el => el.addEventListener("click", e => {
-  e.preventDefault();
-  Object.assign(state, { sale: true, cat: null });
-  reset();
-  toCatalog();
-}));
 brandInput.addEventListener("input", () => { if (!brandInput.value && state.brand) { state.brand = ""; reset(); } });
 
 // Главный поиск: подсказки — разделы, бренды и машины, которые подходят к введённому
