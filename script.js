@@ -250,7 +250,7 @@ const topBrands = n => {
   return order.slice(0, 3).join(", ");
 };
 // Фото разделов (деталь без фона, images/cat/NN.webp); где фото нет — значок
-const CAT_PHOTOS = [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14];
+const CAT_PHOTOS = [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
 const tileMedia = n => CAT_PHOTOS.includes(n)
   ? `<span class="tile__media"><img src="images/cat/${String(n).padStart(2, "0")}.webp" alt="" width="520" height="520" loading="lazy"></span>`
   : `<span class="tile__media"><span class="tile__icon">${ICONS[n]}</span></span>`;
