@@ -843,3 +843,12 @@ body { background: #eceef2; }
   .terms__check .btn { margin-left: 0; }
 }
 .modal__hint { margin: -6px 0 14px; padding: 10px 12px; border-radius: 10px; background: #fff4e5; color: #6b4a00; font-size: .88rem; line-height: 1.45; }
+
+/* Ссылки на Фарпост */
+.footer__farpost { color: #e8eaee; font-weight: 700; text-decoration: none; }
+.footer__farpost:hover { color: #ff9a9a; }
+.stats__item--link { text-decoration: none; border-radius: 0 10px 10px 0; transition: background-color .2s; }
+.stats__item--link:hover { background: rgba(227, 43, 43, .12); }
+.stats__item--link span { color: #ffb3b3; }
+.about__link { display: inline-block; margin-top: 10px; color: #ff9a9a; font-weight: 700; text-decoration: none; }
+.about__link:hover { color: #fff; }
