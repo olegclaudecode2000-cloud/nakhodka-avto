@@ -620,6 +620,18 @@ grid.addEventListener("keydown", e => {
 $("modalClose").addEventListener("click", () => modal.close());
 modal.addEventListener("click", e => { if (e.target === modal) modal.close(); });
 
+// Пришли со страницы раздела или марки (?razdel=amortizatory&marka=Toyota&model=Camry) — сразу ставим фильтры
+// Порядок должен совпадать с CAT_SLUGS в заметки/seo_stranicy.py
+const CAT_SLUGS = ["amortizatory", "stoyki", "pruzhiny", "opory", "pylniki", "rychagi", "rulevoe", "stabilizator",
+  "tormoza", "filtry", "remni", "dvigatel", "stupicy", "masla", "elektrika", "prochee"];
+const params = new URLSearchParams(location.search);
+const fromSlug = CAT_SLUGS.indexOf(params.get("razdel"));
+if (fromSlug >= 0) state.cat = fromSlug;
+if (CARS.includes(params.get("marka"))) {
+  state.car = params.get("marka");
+  if ((MODELS[state.car] || []).includes(params.get("model"))) state.model = params.get("model");
+}
+
 render();
 openFromLink();
 window.addEventListener("hashchange", openFromLink);

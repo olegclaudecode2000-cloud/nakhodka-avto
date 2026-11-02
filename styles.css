@@ -852,3 +852,32 @@ body { background: #eceef2; }
 .stats__item--link span { color: #ffb3b3; }
 .about__link { display: inline-block; margin-top: 10px; color: #ff9a9a; font-weight: 700; text-decoration: none; }
 .about__link:hover { color: #fff; }
+
+/* ===== Страницы для поисковиков (zapchasti/…, marka/…) ===== */
+.seo-main { padding: 22px 16px 40px; }
+.seo-crumbs { font-size: .88rem; color: var(--muted); margin-bottom: 14px; }
+.seo-crumbs a { color: var(--muted); }
+.seo-crumbs span { margin: 0 4px; }
+.seo-main h1 { font-size: clamp(1.6rem, 3.4vw, 2.3rem); }
+.seo-intro { max-width: 760px; color: #3d434d; font-size: 1.05rem; }
+.seo-cta { display: flex; flex-wrap: wrap; gap: 10px; margin: 16px 0 24px; }
+.seo-h2 { font-size: 1.1rem; margin-top: 8px; }
+.seo-chips .chip { text-decoration: none; }
+.seo-chips .chip small { color: var(--muted); margin-left: 4px; }
+.seo-grid { margin-top: 18px; }
+.seo-card { display: block; text-decoration: none; color: inherit; }
+.seo-more { text-align: center; margin: 24px 0 8px; }
+.seo-note { margin: 22px 0; padding: 14px 16px; border-radius: var(--radius); background: #fff4e5; color: #6b4a00; font-size: .92rem; }
+.seo-others { margin-top: 22px; }
+.seo-others h2 { font-size: 1.05rem; }
+.seo-others__list { display: flex; flex-wrap: wrap; gap: 8px 16px; }
+.seo-others__list a { color: var(--accent); font-weight: 600; text-decoration: none; }
+.seo-others__list a:hover { text-decoration: underline; }
+.seo-footer { padding: 22px 0 90px; font-size: .9rem; }
+.seo-footer a { color: inherit; }
+/* Ссылки на эти страницы с главной */
+.seo-links { background: #1b1f27; padding: 28px 0 34px; color: #b9c0ca; }
+.seo-links h2 { color: #fff; font-size: 1.05rem; margin: 0 0 10px; }
+.seo-links h2 + div { margin-bottom: 18px; }
+.seo-links a { display: inline-block; margin: 0 14px 8px 0; color: #e8eaee; text-decoration: none; font-size: .92rem; }
+.seo-links a:hover { color: #ff9a9a; }
