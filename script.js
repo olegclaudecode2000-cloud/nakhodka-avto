@@ -369,6 +369,7 @@ function openPart(i) {
       <table class="specs">${rows.map(([k, v]) => `<tr><td>${k}</td><td>${escapeHtml(v)}</td></tr>`).join("")}</table>
       <div class="modal__price">${money(it.price)}${it.sale ? ' <span class="badge badge--sale">Распродажа</span>' : ""}</div>
       <p class="modal__note"><span class="badge badge--stock">В наличии</span> Цена по прайсу от ${PARTS_UPDATED}.</p>
+      <p class="modal__hint">Перед заказом пришлите полный номер кузова — проверим, что деталь подойдёт. Отправляем по России, до ТК — 300 ₽. Гарантия 30 дней при установке в СТО.</p>
       ${pairBlock(it)}
       <div class="ask">
         <button class="btn btn--list${inList(it) ? " is-added" : ""}" data-list>${listBtnText(it)}</button>
@@ -449,7 +450,7 @@ const listRows = () => wish.map(w => ({ ...w, it: BY_KEY.get(w.k) }));
 const listTotal = () => listRows().reduce((s, r) => s + r.it.price * r.q, 0);
 function listText() {
   const lines = listRows().map((r, n) => `${n + 1}. ${r.it.brand} ${r.it.article} — ${r.it.name}${r.it.side ? " (" + r.it.side + ")" : ""} — ${r.q} шт. × ${money(r.it.price)}`);
-  return `Здравствуйте! Хочу заказать / уточнить наличие:\n${lines.join("\n")}\nИтого по сайту: ${money(listTotal())}\nСписок с сайта «Амортизаторы-Пружины».`;
+  return `Здравствуйте! Хочу заказать / уточнить наличие:\n${lines.join("\n")}\nИтого по сайту: ${money(listTotal())}\nНомер кузова моей машины: \nСписок с сайта «Амортизаторы-Пружины».`;
 }
 function renderList() {
   const n = wish.reduce((s, w) => s + w.q, 0);
@@ -512,7 +513,7 @@ listModal.addEventListener("click", async e => {
 renderList();
 
 // Текст вопроса маме — сразу с брендом, артикулом и названием
-const askText = it => `Здравствуйте! Есть в наличии ${it.brand} ${it.article} — ${it.name}${it.side ? " (" + it.side + ")" : ""}? Нашёл на сайте «Амортизаторы-Пружины».`;
+const askText = it => `Здравствуйте! Есть в наличии ${it.brand} ${it.article} — ${it.name}${it.side ? " (" + it.side + ")" : ""}? Нашёл на сайте «Амортизаторы-Пружины». Номер кузова моей машины: `;
 
 // Для той же машины: тот же бренд и та же применимость (пара, пружины, опоры…)
 function sameCar(it) {
@@ -622,6 +623,6 @@ if ("IntersectionObserver" in window && !matchMedia("(prefers-reduced-motion: re
   const io = new IntersectionObserver(entries => entries.forEach(e => {
     if (e.isIntersecting) { e.target.classList.add("is-in"); io.unobserve(e.target); }
   }), { rootMargin: "0px 0px -8% 0px" });
-  document.querySelectorAll(".stats__item, .request__box, .about h2, .about__photo, .about__item, .footer__grid > div")
+  document.querySelectorAll(".stats__item, .request__box, .terms h2, .terms__check, .terms__item, .about h2, .about__photo, .about__item, .footer__grid > div")
     .forEach((el, n) => { el.classList.add("reveal"); el.style.setProperty("--d", (n % 4) * 70 + "ms"); io.observe(el); });
 }
