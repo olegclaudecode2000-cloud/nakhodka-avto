@@ -162,9 +162,10 @@ function suggest(input, list, getItems, onPick) {
 
 // Бренд: вводите часть названия — сайт предлагает подходящие (KYB и OBK первыми)
 suggest(brandInput, $("brandList"), q => {
-  const found = brandOrder.filter(b => !q || b.toLowerCase().includes(q))
+  const inCat = catInfo().brands; // только бренды, которые есть в выбранном разделе
+  const found = brandOrder.filter(b => inCat[b] && (!q || b.toLowerCase().includes(q)))
     .sort((a, b) => (q ? (b.toLowerCase().startsWith(q) - a.toLowerCase().startsWith(q)) : 0));
-  return [{ label: "Все бренды", value: "" }, ...found.slice(0, 40).map(b => ({ label: b, value: b, count: brandCount[b] }))];
+  return [{ label: "Все бренды", value: "" }, ...found.slice(0, 40).map(b => ({ label: b, value: b, count: inCat[b] }))];
 }, it => {
   state.brand = it.value;
   brandInput.value = it.value;
@@ -210,17 +211,38 @@ function card(it) {
   </article>`;
 }
 
+// Что есть в выбранном разделе (и распродаже): марки, бренды, модели — чтобы не предлагать пустые фильтры
+const CAT_INFO = new Map();
+function catInfo() {
+  const key = state.cat + "|" + state.sale;
+  if (!CAT_INFO.has(key)) {
+    const items = ITEMS.filter(it => (state.cat === null || it.cat === state.cat) && (!state.sale || it.sale));
+    const cars = new Set(), brands = {};
+    items.forEach(it => { it.cars.forEach(c => cars.add(c)); brands[it.brand] = (brands[it.brand] || 0) + 1; });
+    CAT_INFO.set(key, { items, cars, brands, models: {} });
+  }
+  return CAT_INFO.get(key);
+}
+
 function renderChips() {
   $("categoryChips").innerHTML =
     `<button class="chip ${state.cat === null && !state.sale ? "is-active" : ""}" data-cat="">Все разделы</button>` +
     (SALE_COUNT ? `<button class="chip chip--sale ${state.sale ? "is-active" : ""}" data-sale>Распродажа (${SALE_COUNT})</button>` : "") +
     PART_CATEGORIES.map((c, n) => `<button class="chip${MAIN_CATS.includes(n) ? " chip--main" : ""} ${state.cat === n ? "is-active" : ""}" data-cat="${n}">${escapeHtml(c)}</button>`).join("");
+  // Марки, модели и бренд — только те, что есть в выбранном разделе; иначе выбор сбрасывается
+  const info = catInfo();
+  const cars = CARS.filter(c => info.cars.has(c));
+  if (state.car && !cars.includes(state.car)) { state.car = ""; state.model = ""; }
+  if (state.brand && !info.brands[state.brand]) state.brand = "";
+  $("carChips").hidden = !cars.length;
   $("carChips").innerHTML = `<span class="chips__label">Машина:</span>` +
-    ["", ...CARS].map(c => `<button class="chip chip--small chip--car ${state.car === c ? "is-active" : ""}" data-car="${c}">${carLogo(c)}${c || "Любая"}</button>`).join("");
-  const models = state.car ? MODELS[state.car].filter(m => (modelData(m), MODEL_COUNT[m] > 0)) : [];
+    ["", ...cars].map(c => `<button class="chip chip--small chip--car ${state.car === c ? "is-active" : ""}" data-car="${c}">${carLogo(c)}${c || "Любая"}</button>`).join("");
+  const modelCount = m => info.models[m] ?? (info.models[m] = info.items.filter(it => modelData(m).has(it.fi)).length);
+  const models = state.car ? MODELS[state.car].filter(m => modelCount(m) > 0) : [];
+  if (state.model && !models.includes(state.model)) state.model = "";
   $("modelRow").hidden = !models.length;
   $("modelSelect").innerHTML = `<option value="">Все модели ${state.car}</option>` +
-    models.map(m => `<option value="${m}"${state.model === m ? " selected" : ""}>${m} (${MODEL_COUNT[m]})</option>`).join("");
+    models.map(m => `<option value="${m}"${state.model === m ? " selected" : ""}>${m} (${modelCount(m)})</option>`).join("");
   if (document.activeElement !== brandInput) brandInput.value = state.brand;
 }
 
