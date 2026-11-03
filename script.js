@@ -36,11 +36,13 @@ const ICONS = [
 if (MAX_LINK) document.querySelectorAll("[data-max]").forEach(el => { el.href = MAX_LINK; el.hidden = false; });
 
 // Данные из прайсов: словари + строки [раздел, бренд#, артикул, название#, сторона#, применимость#, цена, распродажа, номера]
+// Каталог грузится двумя частями: data/parts-1.js (главные разделы, сразу) и data/parts-2.js (остальное, следом).
+// Бренды и стороны приходят целиком в первой части, названия и применимость — дополняются из второй.
 const D = PARTS_DATA;
 const PART_CATEGORIES = D.c, PARTS_UPDATED = D.u;
 const L = arr => arr.map(s => s.toLowerCase());
-const BRAND_L = L(D.b), NAME_L = L(D.n), SIDE_L = L(D.s), FITS_L = L(D.f), CAT_L = L(D.c);
-const FITS_U = D.f.map(s => s.toUpperCase());
+const BRAND_L = L(D.b), SIDE_L = L(D.s), CAT_L = L(D.c);
+const NAMES = [], FITS = [], NAME_L = [], FITS_L = [], FITS_U = [];
 const MAIN_BRAND = D.b.map(b => /^(kyb|obk)$/i.test(b));
 
 // Место установки (перед/зад, лев/прав) — для пары и аналогов
@@ -50,19 +52,35 @@ const SIDE_PLACE = D.s.map(placeOf);
 const CODE_PLACE = { FR: "перед прав", FL: "перед лев", RR: "зад прав", RL: "зад лев" };
 const codePlace = re => s => placeOf(CODE_PLACE[(String(s).toUpperCase().match(re) || [])[1]] || "");
 const mergePlace = (...ps) => ({ front: ps.some(p => p.front), rear: ps.some(p => p.rear), left: ps.some(p => p.left), right: ps.some(p => p.right) });
-const NAME_PLACE = D.n.map(n => mergePlace(placeOf(n), codePlace(/\((FR|FL|RR|RL)\)/)(n)));
-const FITS_PLACE = D.f.map(codePlace(/--\s*(FR|FL|RR|RL)\b/));
+const nameRe = codePlace(/\((FR|FL|RR|RL)\)/), fitsRe = codePlace(/--\s*(FR|FL|RR|RL)\b/);
+const NAME_PLACE = [], FITS_PLACE = [];
 
-const ITEMS = D.p.map((r, i) => ({
-  i, cat: r[0], bi: r[1], brand: D.b[r[1]], article: String(r[2]), ni: r[3], name: D.n[r[3]],
-  si: r[4], side: D.s[r[4]], fi: r[5], fits: D.f[r[5]], price: r[6], sale: r[7] === 1,
-  extra: r[8], art: norm(r[2]), isMain: MAIN_BRAND[r[1]], place: mergePlace(SIDE_PLACE[r[4]], NAME_PLACE[r[3]], FITS_PLACE[r[5]]),
-}));
-// Сначала KYB и OBK — основное в магазине (остальное уже отсортировано по разделам и брендам)
+const ITEMS = [];
 // Главное в магазине — амортизаторы, стойки и пружины: они первыми, внутри них сначала KYB и OBK
 const MAIN_CATS = [0, 1, 2];
 const isMainCat = it => MAIN_CATS.includes(it.cat);
-ITEMS.sort((a, b) => (isMainCat(b) - isMainCat(a)) || (b.isMain - a.isMain) || a.cat - b.cat);
+let FULL = false; // догрузилась ли вторая часть каталога
+
+// Добавить часть каталога: словари названий и применимости дополняются, товары — в общий список
+function addParts(names, fits, rows) {
+  names.forEach(n => { NAMES.push(n); NAME_L.push(n.toLowerCase()); NAME_PLACE.push(mergePlace(placeOf(n), nameRe(n))); });
+  fits.forEach(f => {
+    const l = f.toLowerCase();
+    FITS.push(f); FITS_L.push(l); FITS_U.push(f.toUpperCase()); FITS_PLACE.push(fitsRe(f));
+    FITS_CARS.push(CARS.filter(c => l.includes(c.toLowerCase()))); FITS_USE.push(0);
+  });
+  rows.forEach(r => {
+    const it = {
+      i: ITEMS.length, cat: r[0], bi: r[1], brand: D.b[r[1]], article: String(r[2]), ni: r[3], name: NAMES[r[3]],
+      si: r[4], side: D.s[r[4]], fi: r[5], fits: FITS[r[5]], price: r[6], sale: r[7] === 1,
+      extra: r[8], art: norm(r[2]), isMain: MAIN_BRAND[r[1]], place: mergePlace(SIDE_PLACE[r[4]], NAME_PLACE[r[3]], FITS_PLACE[r[5]]),
+      cars: FITS_CARS[r[5]],
+    };
+    FITS_USE[it.fi]++;
+    ITEMS.push(it);
+  });
+  ITEMS.sort((a, b) => (isMainCat(b) - isMainCat(a)) || (b.isMain - a.isMain) || a.cat - b.cat);
+}
 
 // Марки и модели для подбора «марка → модель»
 const MODELS = {
@@ -84,17 +102,15 @@ const CARS = Object.keys(MODELS);
 const CAR_LOGO = { Toyota: "toyota.svg", Nissan: "nissan.svg", Honda: "honda.svg", Mazda: "mazda.svg", Mitsubishi: "mitsubishi.svg",
   Subaru: "subaru.svg", Suzuki: "suzuki.svg", Lexus: "lexus.png", Daihatsu: "daihatsu.png", Isuzu: "isuzu.png", Hyundai: "hyundai.svg", Kia: "kia.svg" };
 const carLogo = c => CAR_LOGO[c] ? `<span class="car-logo car-logo--${c.toLowerCase()}" style="--logo:url(images/cars/${CAR_LOGO[c]})" aria-hidden="true"></span>` : "";
-// Марки по каждой строке применимости (считаем один раз на уникальную строку)
-const FITS_CARS = FITS_L.map(f => CARS.filter(c => f.includes(c.toLowerCase())));
-ITEMS.forEach(it => { it.cars = FITS_CARS[it.fi]; });
+// Марки по каждой строке применимости (считаем один раз на уникальную строку) и сколько товаров на строку
+const FITS_CARS = [], FITS_USE = [];
+addParts(D.n, D.f, D.p); // первая часть — сразу
 
 // Модель ищем отдельным словом: «Fit» не находится в «FITS», а «RX» находится в «RX300»
 const escRe = s => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 const modelRe = m => new RegExp("(^|[^A-Z0-9])" + escRe(m.toUpperCase()).replace(/[-\s]/g, "[-\\s]?") + "(?![A-Z])");
-// Какие строки применимости подходят модели — считаем, только когда выбрали марку
-const FITS_USE = new Array(D.f.length).fill(0);
-ITEMS.forEach(it => { FITS_USE[it.fi]++; });
-const MODEL_FITS = {}, MODEL_COUNT = {};
+// Какие строки применимости подходят модели — считаем, только когда выбрали марку (после догрузки — заново)
+let MODEL_FITS = {}, MODEL_COUNT = {};
 function modelData(m) {
   if (!MODEL_FITS[m]) {
     const re = modelRe(m), set = new Set();
@@ -119,22 +135,31 @@ const baseOf = fi => BASE[fi] ?? (BASE[fi] = FITS_U[fi].replace(/--\s*(FR|FL|RR|
 
 const PAGE = 30;
 const state = { cat: null, car: "", model: "", brand: "", sale: false, query: "", shown: PAGE };
+const CAR_KEY = "ap-car";
+function rememberCar() {
+  try { state.car ? localStorage.setItem(CAR_KEY, JSON.stringify({ car: state.car, model: state.model })) : localStorage.removeItem(CAR_KEY); } catch { /* без памяти */ }
+}
 
 const $ = id => document.getElementById(id);
 const grid = $("productGrid"), count = $("catalogCount"), empty = $("emptyState"), moreBtn = $("moreBtn");
 const searchInput = $("searchInput"), brandInput = $("brandInput");
-const SALE_COUNT = ITEMS.filter(it => it.sale).length;
+// Итоговые цифры всего каталога приходят в первой части — показываем их сразу
+const SALE_COUNT = D.sale ?? ITEMS.filter(it => it.sale).length;
 
 // Цифры в шапке
-document.querySelectorAll("[data-total]").forEach(el => el.textContent = ITEMS.length.toLocaleString("ru-RU"));
-document.querySelectorAll("[data-brands]").forEach(el => el.textContent = D.b.length - 2);
+document.querySelectorAll("[data-total]").forEach(el => el.textContent = (D.total ?? ITEMS.length).toLocaleString("ru-RU"));
+document.querySelectorAll("[data-brands]").forEach(el => el.textContent = (D.brands ?? D.b.length) - 2);
 document.querySelectorAll("[data-updated]").forEach(el => el.textContent = PARTS_UPDATED);
 
-// Бренды в выпадающем списке: KYB и OBK первыми, дальше по количеству
-const brandCount = {};
-ITEMS.forEach(it => { brandCount[it.brand] = (brandCount[it.brand] || 0) + 1; });
-const brandOrder = Object.keys(brandCount).sort((a, b) =>
-  (/^(kyb|obk)$/i.test(b) - /^(kyb|obk)$/i.test(a)) || brandCount[b] - brandCount[a]);
+// Бренды в выпадающем списке: KYB и OBK первыми, дальше по количеству (после догрузки — пересчёт)
+let brandCount = {}, brandOrder = [];
+function countBrands() {
+  brandCount = {};
+  ITEMS.forEach(it => { brandCount[it.brand] = (brandCount[it.brand] || 0) + 1; });
+  brandOrder = Object.keys(brandCount).sort((a, b) =>
+    (/^(kyb|obk)$/i.test(b) - /^(kyb|obk)$/i.test(a)) || brandCount[b] - brandCount[a]);
+}
+countBrands();
 
 // Подсказки при вводе: список под полем, выбор пальцем или мышкой
 function suggest(input, list, getItems, onPick) {
@@ -251,8 +276,12 @@ function render() {
   const list = filtered();
   $("catalogTitle").textContent = (state.sale ? "Распродажа" : state.cat === null ? "Каталог" : PART_CATEGORIES[state.cat]) +
     (state.model ? ` для ${state.car} ${state.model}` : state.car ? ` для ${state.car}` : "");
-  count.textContent = list.length ? `Найдено: ${list.length.toLocaleString("ru-RU")}` : "";
-  empty.hidden = list.length > 0;
+  // Пока вторая часть каталога в пути — честно пишем, что догружаем, и не говорим «ничего не нашлось»
+  const partial = !FULL && !(state.cat !== null && MAIN_CATS.includes(state.cat));
+  count.textContent = list.length
+    ? `Найдено: ${list.length.toLocaleString("ru-RU")}${partial ? " · загружаем весь каталог…" : ""}`
+    : partial ? "Загружаем весь каталог…" : "";
+  empty.hidden = list.length > 0 || partial;
   grid.innerHTML = list.slice(0, state.shown).map(card).join("");
   const left = list.length - state.shown;
   moreBtn.hidden = left <= 0;
@@ -263,7 +292,7 @@ const reset = () => { state.shown = PAGE; render(); };
 const toCatalog = () => $("catalog").scrollIntoView({ behavior: "smooth" });
 
 // Плитки разделов на первом экране
-const catCount = PART_CATEGORIES.map((_, n) => ITEMS.filter(it => it.cat === n).length);
+let catCount = PART_CATEGORIES.map((_, n) => ITEMS.filter(it => it.cat === n).length);
 // Главные разделы — большие карточки с брендами, остальное — обычные плитки ниже
 const topBrands = n => {
   const c = {};
@@ -316,9 +345,10 @@ $("carChips").addEventListener("click", e => {
   if (!b) return;
   state.car = b.dataset.car;
   state.model = "";
+  rememberCar();
   reset();
 });
-$("modelSelect").addEventListener("change", e => { state.model = e.target.value; reset(); });
+$("modelSelect").addEventListener("change", e => { state.model = e.target.value; rememberCar(); reset(); });
 brandInput.addEventListener("input", () => { if (!brandInput.value && state.brand) { state.brand = ""; reset(); } });
 
 // Главный поиск: подсказки — разделы, бренды и машины, которые подходят к введённому
@@ -339,7 +369,7 @@ suggest(searchInput, $("searchList"), q => {
   Object.assign(state, { cat: null, car: "", model: "", brand: "", sale: false });
   if (it.cat != null) state.cat = it.cat;
   if (it.brand) state.brand = it.brand;
-  if (it.car) { state.car = it.car; state.model = it.model || ""; }
+  if (it.car) { state.car = it.car; state.model = it.model || ""; rememberCar(); }
   state.query = "";
   searchInput.value = "";
   searchInput.blur();
@@ -412,7 +442,9 @@ function openPart(i) {
 
 // Своя ссылка у каждого товара: бренд + артикул (не меняются при обновлении прайса)
 const partKey = it => it.brand + "~" + it.article;
-const BY_KEY = new Map(ITEMS.map(it => [partKey(it), it]));
+const BY_KEY = new Map();
+const indexKeys = () => ITEMS.forEach(it => BY_KEY.set(partKey(it), it));
+indexKeys();
 function openFromLink() {
   const m = location.hash.match(/^#t=(.+)/);
   let key = "";
@@ -457,7 +489,8 @@ function pairBlock(it) {
 const LIST_KEY = "ap-list";
 let wish = [];
 try { wish = JSON.parse(localStorage.getItem(LIST_KEY)) || []; } catch { wish = []; }
-wish = wish.filter(w => w && BY_KEY.has(w.k) && w.q > 0);
+// Пока каталог не догрузился, товары из других разделов ещё не известны — их не выбрасываем, а ждём
+wish = wish.filter(w => w && typeof w.k === "string" && w.q > 0);
 const inList = it => wish.find(w => w.k === partKey(it));
 const listBtnText = it => inList(it) ? "✓ В списке — открыть список" : "Добавить в список запроса";
 function saveList() {
@@ -470,7 +503,7 @@ function addToList(it, q = 1) {
   saveList();
 }
 const listModal = $("listModal"), listBody = $("listBody"), listFab = $("listFab");
-const listRows = () => wish.map(w => ({ ...w, it: BY_KEY.get(w.k) }));
+const listRows = () => wish.map(w => ({ ...w, it: BY_KEY.get(w.k) })).filter(r => r.it); // ещё не догруженные — пока не показываем
 const listTotal = () => listRows().reduce((s, r) => s + r.it.price * r.q, 0);
 function listText() {
   const lines = listRows().map((r, n) => `${n + 1}. ${r.it.brand} ${r.it.article} — ${r.it.name}${r.it.side ? " (" + r.it.side + ")" : ""} — ${r.q} шт. × ${money(r.it.price)}`);
@@ -634,9 +667,56 @@ if (CARS.includes(params.get("marka"))) {
   if ((MODELS[state.car] || []).includes(params.get("model"))) state.model = params.get("model");
 }
 
+// Машина покупателя запоминается в его браузере: в следующий раз каталог сразу для неё
+if (!params.has("razdel") && !params.has("marka")) {
+  try {
+    const saved = JSON.parse(localStorage.getItem(CAR_KEY) || "null");
+    if (saved && CARS.includes(saved.car)) {
+      state.car = saved.car;
+      if ((MODELS[saved.car] || []).includes(saved.model)) state.model = saved.model;
+    }
+  } catch { /* приватный режим — просто без памяти */ }
+}
+
 render();
 openFromLink();
 window.addEventListener("hashchange", openFromLink);
+
+// «Сейчас открыто / закрыто» — по времени Находки (UTC+10). Дни работы уточнить у мамы; пока — каждый день.
+const HOURS = { open: 10, close: 15, days: [0, 1, 2, 3, 4, 5, 6] };
+const DAY_NAMES = ["в воскресенье", "в понедельник", "во вторник", "в среду", "в четверг", "в пятницу", "в субботу"];
+function openStatus() {
+  const now = new Date(Date.now() + 10 * 3600e3); // часы Находки в UTC-полях
+  const day = now.getUTCDay(), h = now.getUTCHours() + now.getUTCMinutes() / 60;
+  if (HOURS.days.includes(day) && h >= HOURS.open && h < HOURS.close) return [true, `Сейчас открыто · до ${HOURS.close}:00`];
+  let add = HOURS.days.includes(day) && h < HOURS.open ? 0 : 1;
+  while (!HOURS.days.includes((day + add) % 7) && add < 7) add++;
+  const when = add === 0 ? "сегодня" : add === 1 ? "завтра" : DAY_NAMES[(day + add) % 7];
+  return [false, `Сейчас закрыто · откроемся ${when} в ${HOURS.open}:00`];
+}
+function showOpenStatus() {
+  const [open, text] = openStatus();
+  document.querySelectorAll("[data-open-status]").forEach(el => { el.textContent = text; el.classList.toggle("is-open", open); el.hidden = false; });
+}
+showOpenStatus();
+setInterval(showOpenStatus, 60 * 1000);
+
+// Вторая часть каталога: догружаем после показа страницы, потом всё пересчитываем и перерисовываем
+window.addPartsChunk = chunk => {
+  addParts(chunk.n, chunk.f, chunk.p);
+  FULL = true;
+  MODEL_FITS = {}; MODEL_COUNT = {}; CAT_INFO.clear();
+  catCount = PART_CATEGORIES.map((_, n) => ITEMS.filter(it => it.cat === n).length);
+  countBrands(); indexKeys();
+  wish = wish.filter(w => BY_KEY.has(w.k)); saveList(); // теперь ясно, каких товаров из списка больше нет
+  render();
+  [...grid.children].forEach(c => { c.style.animation = "none"; }); // без повторной анимации уже видимых карточек
+  if (!modal.open) openFromLink();
+};
+const rest = document.createElement("script");
+rest.src = `data/parts-2.js?v=${D.v || ""}`;
+rest.onerror = () => { count.textContent = "Не удалось загрузить весь каталог — обновите страницу."; };
+document.body.append(rest);
 
 // Шапка с анимацией белая только над светлым каталогом; над тёмным верхом и тёмным низом — снова тёмная
 const header = document.querySelector(".header");
@@ -659,6 +739,6 @@ if ("IntersectionObserver" in window && !matchMedia("(prefers-reduced-motion: re
   const io = new IntersectionObserver(entries => entries.forEach(e => {
     if (e.isIntersecting) { e.target.classList.add("is-in"); io.unobserve(e.target); }
   }), { rootMargin: "0px 0px -8% 0px" });
-  document.querySelectorAll(".stats__item, .request__box, .terms h2, .terms__check, .terms__item, .about h2, .about__photo, .about__item, .footer__grid > div")
+  document.querySelectorAll(".stats__item, .request__box, .reviews-block__score, .reviews-block__item, .terms h2, .terms__check, .terms__item, .about h2, .about__photo, .about__item, .footer__grid > div")
     .forEach((el, n) => { el.classList.add("reveal"); el.style.setProperty("--d", (n % 4) * 70 + "ms"); io.observe(el); });
 }
