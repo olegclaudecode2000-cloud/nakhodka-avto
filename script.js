@@ -415,7 +415,9 @@ const partKey = it => it.brand + "~" + it.article;
 const BY_KEY = new Map(ITEMS.map(it => [partKey(it), it]));
 function openFromLink() {
   const m = location.hash.match(/^#t=(.+)/);
-  const it = m && BY_KEY.get(decodeURIComponent(m[1]));
+  let key = "";
+  try { key = m ? decodeURIComponent(m[1]) : ""; } catch { key = ""; } // кривая ссылка — просто не открываем товар
+  const it = key && BY_KEY.get(key);
   if (it) openPart(it.i);
 }
 // Окно закрыли — убираем товар из адреса страницы
