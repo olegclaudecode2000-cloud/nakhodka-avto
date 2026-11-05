@@ -35,6 +35,20 @@ const ICONS = [
 // Кнопки «Написать в MAX» на странице появляются, только когда задана ссылка
 if (MAX_LINK) document.querySelectorAll("[data-max]").forEach(el => { el.href = MAX_LINK; el.hidden = false; });
 
+// «Подберём по номеру кузова»: копируем заготовку сообщения и открываем MAX
+const PODBOR_TEXT = "Здравствуйте! Подберите, пожалуйста: ___ (например, передние амортизаторы). Номер кузова: ___";
+document.querySelectorAll("[data-podbor]").forEach(btn => {
+  if (!MAX_LINK) return;
+  btn.hidden = false;
+  btn.addEventListener("click", async () => {
+    const tip = document.getElementById("podborTip");
+    try { await navigator.clipboard.writeText(PODBOR_TEXT); tip.textContent = "Заготовка сообщения скопирована — вставьте её в чат MAX и допишите."; }
+    catch { tip.textContent = "Напишите в MAX: " + PODBOR_TEXT; }
+    tip.hidden = false;
+    window.open(MAX_LINK, "_blank", "noopener");
+  });
+});
+
 // Данные из прайсов: словари + строки [раздел, бренд#, артикул, название#, сторона#, применимость#, цена, распродажа, номера]
 // Каталог грузится двумя частями: data/parts-1.js (главные разделы, сразу) и data/parts-2.js (остальное, следом).
 // Бренды и стороны приходят целиком в первой части, названия и применимость — дополняются из второй.
@@ -438,6 +452,7 @@ function openPart(i) {
         <button class="btn btn--ghost" data-share>Поделиться ссылкой на товар</button>
       </div>
       <p class="ask__tip" id="askTip" hidden></p>
+      ${related(it.cat === 2 ? "С пружинами обычно берут" : "С амортизатором обычно берут", companions(it), "Опоры, пыльники и отбойники для той же машины — их удобно поменять за один раз. Подойдёт ли точно, сверим по номеру кузова.")}
       ${related("Для этой же машины", sameCar(it), "Тот же бренд и та же машина — например, вторая сторона, чтобы поменять парой.")}
       ${related("Аналоги других брендов", analogs(it), "Подобраны по коду кузова и месту установки. Точную совместимость сверим по телефону.")}
     </div>`;
@@ -584,6 +599,31 @@ function sameCar(it) {
   const base = baseOf(it.fi);
   return ITEMS.filter(x => x !== it && x.bi === it.bi && x.fits && (x.fi === it.fi || baseOf(x.fi) === base))
     .sort((a, b) => a.cat - b.cat || a.price - b.price).slice(0, 6);
+}
+
+// «С этим обычно берут»: к амортизатору, стойке или пружине — опоры и пыльники с отбойниками
+// любого бренда для той же машины (общий код кузова) и того же места (перед/зад).
+const WITH_CATS = { 0: [3, 4], 1: [3, 4], 2: [3, 4] };
+const WITH_NAME = { 3: /опор|подшипник|втулк[аи] амортизатора/i, 4: /пыльник|отбойник/i };
+const WITH_SKIP = /панар|стабилизатор|рычаг|полиуретан/i;
+// Сначала совпадение по коду кузова (точнее), если кода в прайсе нет — по марке и модели.
+const MODEL_RE = {};
+const carModels = it => (it.cars || []).flatMap(car => (MODELS[car] || []).filter(m => (MODEL_RE[m] ||= modelRe(m)).test(FITS_U[it.fi])));
+function companions(it) {
+  const want = WITH_CATS[it.cat];
+  if (!want || !it.fits) return [];
+  const mine = codesOf(it.fi);
+  const fitSets = carModels(it).map(m => modelData(m));
+  if (!mine.size && !fitSets.length) return [];
+  const score = x => [...codesOf(x.fi)].some(c => mine.has(c)) ? 2 : fitSets.some(s => s.has(x.fi)) ? 1 : 0;
+  const out = [];
+  for (const cat of want) {
+    out.push(...ITEMS.filter(x => x.cat === cat && x.fits && samePlace(x.place, it.place) && WITH_NAME[cat].test(x.name) && !WITH_SKIP.test(x.name))
+      .map(x => [x, score(x)]).filter(([, s]) => s)
+      .sort(([a, sa], [b, sb]) => sb - sa || !!b.isMain - !!a.isMain || a.price - b.price)
+      .slice(0, 3).map(([x]) => x));
+  }
+  return out;
 }
 
 // Аналоги: другой бренд, тот же раздел и место установки, общий код кузова
@@ -755,3 +795,17 @@ if ("IntersectionObserver" in window && !matchMedia("(prefers-reduced-motion: re
   document.querySelectorAll(".stats__item, .request__box, .reviews-block__score, .reviews-block__item, .terms h2, .terms__check, .terms__item, .about h2, .about__photo, .about__item, .footer__grid > div")
     .forEach((el, n) => { el.classList.add("reveal"); el.style.setProperty("--d", (n % 4) * 70 + "ms"); io.observe(el); });
 }
+
+// Частые вопросы → разметка FAQPage для Яндекса и Google (собираем из самого блока, чтобы текст всегда совпадал)
+(() => {
+  const items = [...document.querySelectorAll(".faq__item")];
+  if (!items.length) return;
+  const ld = document.createElement("script");
+  ld.type = "application/ld+json";
+  ld.textContent = JSON.stringify({
+    "@context": "https://schema.org", "@type": "FAQPage",
+    mainEntity: items.map(d => ({ "@type": "Question", name: d.querySelector("summary").textContent.trim(),
+      acceptedAnswer: { "@type": "Answer", text: d.querySelector(".faq__answer").textContent.replace(/\s+/g, " ").trim() } })),
+  });
+  document.head.appendChild(ld);
+})();
