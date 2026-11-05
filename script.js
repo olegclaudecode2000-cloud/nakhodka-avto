@@ -73,7 +73,7 @@ function addParts(names, fits, rows) {
     const it = {
       i: ITEMS.length, cat: r[0], bi: r[1], brand: D.b[r[1]], article: String(r[2]), ni: r[3], name: NAMES[r[3]],
       si: r[4], side: D.s[r[4]], fi: r[5], fits: FITS[r[5]], price: r[6], sale: r[7] === 1,
-      extra: r[8], art: norm(r[2]), isMain: MAIN_BRAND[r[1]], place: mergePlace(SIDE_PLACE[r[4]], NAME_PLACE[r[3]], FITS_PLACE[r[5]]),
+      extra: r[8], repl: r[9] || "", art: norm(r[2]), isMain: MAIN_BRAND[r[1]], place: mergePlace(SIDE_PLACE[r[4]], NAME_PLACE[r[3]], FITS_PLACE[r[5]]),
       cars: FITS_CARS[r[5]],
     };
     FITS_USE[it.fi]++;
@@ -221,6 +221,11 @@ function filtered() {
   });
 }
 
+// «В наличии» — или, если в прайсе номер снят и заменён, серая плашка с новым номером
+const stockBadge = it => it.repl
+  ? `<span class="badge badge--repl">Заменён на ${escapeHtml(it.repl)}</span>`
+  : '<span class="badge badge--stock">В наличии</span>';
+
 function card(it) {
   return `
   <article class="card part" data-i="${it.i}" tabindex="0">
@@ -231,8 +236,9 @@ function card(it) {
     <div class="part__article">${escapeHtml(it.article)}</div>
     <h3 class="card__name">${escapeHtml(it.name)}${it.side ? ` <span class="part__side">${escapeHtml(it.side)}</span>` : ""}</h3>
     ${it.fits ? `<p class="part__fits">${escapeHtml(it.fits)}</p>` : ""}
-    <div class="part__badges"><span class="badge badge--stock">В наличии</span>${it.sale ? '<span class="badge badge--sale">Распродажа</span>' : ""}</div>
+    <div class="part__badges">${stockBadge(it)}${it.sale ? '<span class="badge badge--sale">Распродажа</span>' : ""}</div>
     <div class="card__price">${money(it.price)}</div>
+    ${MAX_LINK ? `<button type="button" class="part__ask" data-ask="${it.i}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3C7 3 3 6.6 3 11c0 2.4 1.2 4.6 3.1 6L5 21l4.3-2.3c.9.2 1.8.3 2.7.3 5 0 9-3.6 9-8s-4-8-9-8z"/></svg>Узнать наличие</button>` : ""}
   </article>`;
 }
 
@@ -303,7 +309,7 @@ const topBrands = n => {
 // Фото разделов (деталь без фона, images/cat/NN.webp); где фото нет — значок
 const CAT_PHOTOS = [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
 const tileMedia = n => CAT_PHOTOS.includes(n)
-  ? `<span class="tile__media"><img src="images/cat/${String(n).padStart(2, "0")}.webp" alt="" width="520" height="520" loading="lazy"></span>`
+  ? `<span class="tile__media"><img src="images/cat/${String(n).padStart(2, "0")}.webp" alt="${escapeHtml(PART_CATEGORIES[n])}" width="520" height="520" loading="lazy"></span>`
   : `<span class="tile__media"><span class="tile__icon">${ICONS[n]}</span></span>`;
 const tile = n => `
   <button class="tile" data-cat="${n}">
@@ -314,7 +320,7 @@ $("tiles").innerHTML = `
   <p class="tiles__label">Наша специализация</p>
   <div class="tiles__main">${MAIN_CATS.map(n => `
     <button class="tile tile--main" data-cat="${n}">
-      <span class="tile__thumb${n === 2 ? " tile__thumb--photo" : ""}"><img src="images/cat/${String(n).padStart(2, "0")}.webp" alt="" width="520" height="520"></span>
+      <span class="tile__thumb${n === 2 ? " tile__thumb--photo" : ""}"><img src="images/cat/${String(n).padStart(2, "0")}.webp" alt="${escapeHtml(PART_CATEGORIES[n])}" width="520" height="520"></span>
       <span class="tile--main__text">
         <span class="tile--main__title">${escapeHtml(PART_CATEGORIES[n])}</span>
         <span class="tile--main__brands">${escapeHtml(topBrands(n))}</span>
@@ -420,7 +426,7 @@ function openPart(i) {
       <h2>${escapeHtml(it.name)}</h2>
       <table class="specs">${rows.map(([k, v]) => `<tr><td>${k}</td><td>${escapeHtml(v)}</td></tr>`).join("")}</table>
       <div class="modal__price">${money(it.price)}${it.sale ? ' <span class="badge badge--sale">Распродажа</span>' : ""}</div>
-      <p class="modal__note"><span class="badge badge--stock">В наличии</span> Цена по прайсу от ${PARTS_UPDATED}.</p>
+      <p class="modal__note">${stockBadge(it)} ${it.repl ? `Номер снят, вместо него — ${escapeHtml(it.repl)}. Уточним наличие нового.` : `Цена по прайсу от ${PARTS_UPDATED}.`}</p>
       <p class="modal__hint">Перед заказом пришлите полный номер кузова — проверим, что деталь подойдёт. Отправляем по России, до ТК — 300 ₽.</p>
       ${pairBlock(it)}
       <div class="ask">
@@ -644,7 +650,14 @@ modalBody.addEventListener("click", async e => {
     window.open(MAX_LINK, "_blank", "noopener");
   }
 });
-grid.addEventListener("click", e => {
+grid.addEventListener("click", async e => {
+  const ask = e.target.closest("[data-ask]");
+  if (ask) {
+    const it = byIndex(Number(ask.dataset.ask));
+    try { await navigator.clipboard.writeText(askText(it)); ask.textContent = "Текст скопирован — вставьте в MAX"; } catch { /* без буфера — просто откроем MAX */ }
+    window.open(MAX_LINK, "_blank", "noopener");
+    return;
+  }
   const c = e.target.closest(".card[data-i]");
   if (c) openPart(Number(c.dataset.i));
 });
@@ -692,7 +705,7 @@ function openStatus() {
   let add = HOURS.days.includes(day) && h < HOURS.open ? 0 : 1;
   while (!HOURS.days.includes((day + add) % 7) && add < 7) add++;
   const when = add === 0 ? "сегодня" : add === 1 ? "завтра" : DAY_NAMES[(day + add) % 7];
-  return [false, `Сейчас закрыто · откроемся ${when} в ${HOURS.open}:00`];
+  return [false, `Сейчас закрыто · откроемся ${when} в ${HOURS.open}:00. Напишите в MAX — ответим, как откроемся`];
 }
 function showOpenStatus() {
   const [open, text] = openStatus();
