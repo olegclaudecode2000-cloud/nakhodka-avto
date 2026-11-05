@@ -905,7 +905,7 @@ body { background: #eceef2; }
 .badge--repl { background: #eceef2; color: #4b5563; }
 /* «Узнать наличие» прямо в карточке — сразу в MAX */
 .part__ask { display: inline-flex; align-items: center; justify-content: center; gap: 6px; margin-top: 8px; padding: 7px 10px; width: 100%;
-  border: 0; border-radius: 9px; background: #4f46e5; color: #fff; font: inherit; font-size: .85rem; font-weight: 700; cursor: pointer; }
+  border: 1px solid var(--border); border-radius: 9px; background: #fff; color: var(--text); font: inherit; font-size: .85rem; font-weight: 700; cursor: pointer; transition: border-color .2s, color .2s, background .2s; }
 .part__ask svg { width: 15px; height: 15px; fill: currentColor; flex: none; }
-.part__ask:hover { background: #6366f1; }
+.part__ask:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
 @media (max-width: 520px) { .part__ask { font-size: .75rem; padding: 6px 6px; } }
