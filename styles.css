@@ -833,7 +833,7 @@ body { background: #eceef2; }
   border-radius: var(--radius); background: rgba(227, 43, 43, .12); box-shadow: inset 0 0 0 1px rgba(227, 43, 43, .45), inset 4px 0 0 var(--accent); color: #e8eaee; }
 .terms__check b { color: #fff; }
 .terms__check .btn { margin-left: auto; }
-.terms__grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.terms__grid { display: grid; grid-template-columns: 1fr; gap: 16px; max-width: 760px; }
 .terms__item { background: rgba(255, 255, 255, .05); border: 1px solid rgba(255, 255, 255, .1); border-radius: var(--radius); padding: 20px; }
 .terms__item h3 { color: #fff; font-size: 1.05rem; }
 .terms__item p { margin: 0; color: #b9c0ca; font-size: .95rem; }
