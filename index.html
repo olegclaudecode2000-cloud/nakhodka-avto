@@ -46,7 +46,7 @@
   }
   </script>
 
-  <link rel="stylesheet" href="styles.css?v=20261105e">
+  <link rel="stylesheet" href="styles.css?v=20261108a">
 </head>
 <body>
 
@@ -77,9 +77,9 @@
   <section class="hero">
     <div class="container">
       <h1>Амортизаторы и пружины в&nbsp;Находке</h1>
-      <p class="hero__sub">KYB, OBK и ещё <span data-brands>десятки</span> брендов. <b data-total>2 500</b> позиций с ценами, поиск по артикулу и по машине. 19 лет на Фарпосте.</p>
+      <p class="hero__sub">KYB, OBK и ещё <span data-brands>десятки</span> <span data-brands-word>брендов</span>. <b data-total>2 500</b> позиций с ценами, поиск по артикулу и по машине. 19 лет на Фарпосте.</p>
       <form class="search" id="searchForm" role="search">
-        <input id="searchInput" type="search" enterkeyhint="search" placeholder="Артикул, название или машина: KYB 334, Camry, Fielder…" autocomplete="off" aria-label="Поиск по каталогу">
+        <input id="searchInput" type="search" enterkeyhint="search" placeholder="Артикул, название или машина: KYB 334, камри, стойка филдер…" autocomplete="off" aria-label="Поиск по каталогу">
         <span class="suggest__list suggest__list--search" id="searchList" role="listbox" hidden></span>
         <button class="btn btn--accent" type="submit">Найти</button>
       </form>
@@ -119,6 +119,8 @@
       <p>Скорее всего, нужная деталь есть или привезём под заказ. Позвоните или напишите в MAX — назовите машину или артикул.</p>
       <a class="btn btn--call" href="tel:+79147036933">Позвонить: 8 914 703-69-33</a>
       <a class="btn btn--max" data-max href="#" target="_blank" rel="noopener" hidden>Написать в MAX</a>
+      <button class="btn btn--max" id="emptyMax" type="button" hidden></button>
+      <p class="ask__tip" id="emptyTip" hidden></p>
     </div>
   </main>
 
@@ -366,6 +368,7 @@
   </dialog>
 
   <script src="data/parts-1.js?v=20261107c"></script>
-  <script src="script.js?v=20261105b"></script>
+  <script src="ru-search.js?v=20261108a"></script>
+  <script src="script.js?v=20261108a"></script>
 </body>
 </html>

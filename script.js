@@ -54,7 +54,9 @@ document.querySelectorAll("[data-podbor]").forEach(btn => {
 // Бренды и стороны приходят целиком в первой части, названия и применимость — дополняются из второй.
 const D = PARTS_DATA;
 const PART_CATEGORIES = D.c, PARTS_UPDATED = D.u;
-const L = arr => arr.map(s => s.toLowerCase());
+// Для поиска: заглавные и «ё» не важны («щётка» и «щетка» — одно и то же)
+const low = s => String(s).toLowerCase().replace(/ё/g, "е");
+const L = arr => arr.map(low);
 const BRAND_L = L(D.b), SIDE_L = L(D.s), CAT_L = L(D.c);
 const NAMES = [], FITS = [], NAME_L = [], FITS_L = [], FITS_U = [];
 const MAIN_BRAND = D.b.map(b => /^(kyb|obk)$/i.test(b));
@@ -77,9 +79,9 @@ let FULL = false; // догрузилась ли вторая часть кат�
 
 // Добавить часть каталога: словари названий и применимости дополняются, товары — в общий список
 function addParts(names, fits, rows) {
-  names.forEach(n => { NAMES.push(n); NAME_L.push(n.toLowerCase()); NAME_PLACE.push(mergePlace(placeOf(n), nameRe(n))); });
+  names.forEach(n => { NAMES.push(n); NAME_L.push(low(n)); NAME_PLACE.push(mergePlace(placeOf(n), nameRe(n))); });
   fits.forEach(f => {
-    const l = f.toLowerCase();
+    const l = low(f);
     FITS.push(f); FITS_L.push(l); FITS_U.push(f.toUpperCase()); FITS_PLACE.push(fitsRe(f));
     FITS_CARS.push(CARS.filter(c => l.includes(c.toLowerCase()))); FITS_USE.push(0);
   });
@@ -162,7 +164,11 @@ const SALE_COUNT = D.sale ?? ITEMS.filter(it => it.sale).length;
 
 // Цифры в шапке
 document.querySelectorAll("[data-total]").forEach(el => el.textContent = (D.total ?? ITEMS.length).toLocaleString("ru-RU"));
-document.querySelectorAll("[data-brands]").forEach(el => el.textContent = (D.brands ?? D.b.length) - 2);
+const BRANDS_LEFT = (D.brands ?? D.b.length) - 2;
+document.querySelectorAll("[data-brands]").forEach(el => el.textContent = BRANDS_LEFT);
+// «252 бренда», «251 бренд», «255 брендов»
+const brandWord = n => n % 10 === 1 && n % 100 !== 11 ? "бренд" : n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 10 || n % 100 >= 20) ? "бренда" : "брендов";
+document.querySelectorAll("[data-brands-word]").forEach(el => el.textContent = brandWord(BRANDS_LEFT));
 document.querySelectorAll("[data-updated]").forEach(el => el.textContent = PARTS_UPDATED);
 
 // Бренды в выпадающем списке: KYB и OBK первыми, дальше по количеству (после догрузки — пересчёт)
@@ -216,11 +222,11 @@ brandInput.addEventListener("search", () => { if (!brandInput.value && state.bra
 // Каждое слово запроса должно найтись хоть где-то: бренд, артикул, название, сторона, машина, раздел, номера
 function hasWord(it, w) {
   return NAME_L[it.ni].includes(w) || BRAND_L[it.bi].includes(w) || it.art.includes(w) || FITS_L[it.fi].includes(w) ||
-    SIDE_L[it.si].includes(w) || CAT_L[it.cat].includes(w) || it.extra.toLowerCase().includes(w);
+    SIDE_L[it.si].includes(w) || CAT_L[it.cat].includes(w) || low(it.extra).includes(w);
 }
 
 function filtered() {
-  const words = state.query.toLowerCase().split(/\s+/).filter(Boolean);
+  const terms = searchTerms(state.query); // русские названия машин и брендов — ru-search.js
   const compact = norm(state.query);
   const modelSet = state.model ? modelData(state.model) : null;
   return ITEMS.filter(it => {
@@ -229,16 +235,19 @@ function filtered() {
     if (modelSet) { if (!modelSet.has(it.fi)) return false; }
     else if (state.car && !it.cars.includes(state.car)) return false;
     if (state.brand && it.brand !== state.brand) return false;
-    if (!words.length) return true;
-    return words.every(w => hasWord(it, w)) ||
+    if (!terms.length) return true;
+    return terms.every(alts => alts.some(w => hasWord(it, w))) ||
       (compact.length >= 3 && (it.art.includes(compact) || it.extra.toLowerCase().includes(compact)));
   });
 }
 
-// «В наличии» — или, если в прайсе номер снят и заменён, серая плашка с новым номером
+// «Наличие уточнять» — или, если в прайсе номер снят и заменён, серая плашка с новым номером
+const STOCK_TEXT = "Наличие уточнять";
 const stockBadge = it => it.repl
   ? `<span class="badge badge--repl">Заменён на ${escapeHtml(it.repl)}</span>`
-  : '<span class="badge badge--stock">В наличии</span>';
+  : `<span class="badge">${STOCK_TEXT}</span>`;
+// В карточке эти же слова стоят на кнопке в MAX, поэтому отдельная плашка нужна только у заменённых номеров
+const cardBadge = it => it.repl || !MAX_LINK ? stockBadge(it) : "";
 
 function card(it) {
   return `
@@ -250,9 +259,9 @@ function card(it) {
     <div class="part__article">${escapeHtml(it.article)}</div>
     <h3 class="card__name">${escapeHtml(it.name)}${it.side ? ` <span class="part__side">${escapeHtml(it.side)}</span>` : ""}</h3>
     ${it.fits ? `<p class="part__fits">${escapeHtml(it.fits)}</p>` : ""}
-    <div class="part__badges">${stockBadge(it)}${it.sale ? '<span class="badge badge--sale">Распродажа</span>' : ""}</div>
+    <div class="part__badges">${cardBadge(it)}${it.sale ? '<span class="badge badge--sale">Распродажа</span>' : ""}</div>
     <div class="card__price">${money(it.price)}</div>
-    ${MAX_LINK ? `<button type="button" class="part__ask" data-ask="${it.i}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3C7 3 3 6.6 3 11c0 2.4 1.2 4.6 3.1 6L5 21l4.3-2.3c.9.2 1.8.3 2.7.3 5 0 9-3.6 9-8s-4-8-9-8z"/></svg>Узнать наличие</button>` : ""}
+    ${MAX_LINK ? `<button type="button" class="part__ask" data-ask="${it.i}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3C7 3 3 6.6 3 11c0 2.4 1.2 4.6 3.1 6L5 21l4.3-2.3c.9.2 1.8.3 2.7.3 5 0 9-3.6 9-8s-4-8-9-8z"/></svg>${STOCK_TEXT}</button>` : ""}
   </article>`;
 }
 
@@ -302,11 +311,30 @@ function render() {
     ? `Найдено: ${list.length.toLocaleString("ru-RU")}${partial ? " · загружаем весь каталог…" : ""}`
     : partial ? "Загружаем весь каталог…" : "";
   empty.hidden = list.length > 0 || partial;
+  if (!empty.hidden) renderEmptyAsk();
   grid.innerHTML = list.slice(0, state.shown).map(card).join("");
   const left = list.length - state.shown;
   moreBtn.hidden = left <= 0;
   moreBtn.textContent = `Показать ещё (${left.toLocaleString("ru-RU")})`;
 }
+
+// Ничего не нашлось: кнопка MAX сама готовит сообщение с тем, что человек искал
+const emptyAsk = () => `Здравствуйте! Ищу на сайте «Амортизаторы-Пружины»: ${state.query.trim()}. Есть такое? Номер кузова моей машины: `;
+function renderEmptyAsk() {
+  const b = $("emptyMax");
+  const q = state.query.trim();
+  b.hidden = !MAX_LINK || !q;
+  b.textContent = `Спросить в MAX: «${q.length > 30 ? q.slice(0, 30) + "…" : q}»`;
+  $("emptyTip").hidden = true;
+  empty.querySelector("a[data-max]").hidden = !MAX_LINK || !!q;
+}
+$("emptyMax").addEventListener("click", async () => {
+  const tip = $("emptyTip");
+  try { await navigator.clipboard.writeText(emptyAsk()); tip.textContent = "Текст скопирован — вставьте его в чат MAX и отправьте."; }
+  catch { tip.textContent = "Напишите в MAX: " + emptyAsk(); }
+  tip.hidden = false;
+  window.open(MAX_LINK, "_blank", "noopener");
+});
 
 const reset = () => { state.shown = PAGE; render(); };
 const toCatalog = () => $("catalog").scrollIntoView({ behavior: "smooth" });
@@ -376,11 +404,14 @@ const ALL_MODELS = CARS.flatMap(c => MODELS[c].map(m => ({ car: c, model: m })))
 suggest(searchInput, $("searchList"), q => {
   if (q.length < 2) return [];
   const out = [];
+  // По-русски: «кам» подсказывает Camry, «тойот» — Toyota, «каяб» — KYB
+  const ru = new Set(ruGuess(q).map(norm));
+  const fits = s => s.toLowerCase().startsWith(q) || ru.has(norm(s));
   PART_CATEGORIES.forEach((c, n) => { if (c.toLowerCase().includes(q)) out.push({ group: "Раздел", label: c, count: catCount[n], cat: n }); });
-  brandOrder.filter(b => b.toLowerCase().startsWith(q)).slice(0, 4)
+  brandOrder.filter(fits).slice(0, 4)
     .forEach(b => out.push({ group: "Бренд", label: b, count: brandCount[b], brand: b }));
-  CARS.filter(c => c.toLowerCase().startsWith(q)).forEach(c => out.push({ group: "Марка", label: c, car: c }));
-  ALL_MODELS.filter(x => x.model.toLowerCase().startsWith(q)).slice(0, 4)
+  CARS.filter(fits).forEach(c => out.push({ group: "Марка", label: c, car: c }));
+  ALL_MODELS.filter(x => fits(x.model)).slice(0, 4)
     .forEach(x => out.push({ group: "Машина", label: `${x.car} ${x.model}`, car: x.car, model: x.model }));
   return out.slice(0, 8);
 }, it => {

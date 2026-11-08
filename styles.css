@@ -903,7 +903,8 @@ body { background: #eceef2; }
 
 /* Номер снят и заменён — серая плашка вместо «В наличии» */
 .badge--repl { background: #eceef2; color: #4b5563; }
-/* «Узнать наличие» прямо в карточке — сразу в MAX */
+.empty #emptyMax { margin-left: 0; max-width: 100%; white-space: normal; }
+/* «Наличие уточнять» прямо в карточке — сразу в MAX */
 .part__ask { display: inline-flex; align-items: center; justify-content: center; gap: 6px; margin-top: 8px; padding: 7px 10px; width: 100%;
   border: 1px solid var(--border); border-radius: 9px; background: #fff; color: var(--text); font: inherit; font-size: .85rem; font-weight: 700; cursor: pointer; transition: border-color .2s, color .2s, background .2s; }
 .part__ask svg { width: 15px; height: 15px; fill: currentColor; flex: none; }
