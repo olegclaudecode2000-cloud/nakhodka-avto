@@ -256,32 +256,47 @@ suggest(brandInput, $("brandList"), q => {
 });
 brandInput.addEventListener("search", () => { if (!brandInput.value && state.brand) { state.brand = ""; reset(); } });
 
-// Каждое слово запроса должно найтись хоть где-то: бренд, артикул, название, сторона, машина, раздел, номера.
-// n — то же слово без дефисов и точек: «340-010» находит артикул 340010 («KYB 340-010»)
-function hasWord(it, w, n) {
-  return NAME_L[it.ni].includes(w) || BRAND_L[it.bi].includes(w) || it.art.includes(w) || FITS_L[it.fi].includes(w) ||
-    SIDE_L[it.si].includes(w) || CAT_L[it.cat].includes(w) || it.extraL.includes(w) ||
-    (n.length >= 3 && n !== w && (it.art.includes(n) || it.extraL.includes(n)));
+// Каждое слово запроса должно найтись хоть где-то: бренд, артикул, название, сторона, машина, номера.
+// Название раздела больше не участвует: иначе «шаровая» находила весь раздел «Рычаги, сайлентблоки, шаровые» (М15).
+// a.n — слово без дефисов и точек: «340-010» находит артикул 340010 («KYB 340-010»).
+// a.re — короткие слова из букв (до 3) ищем только с начала слова: «лк» не находится внутри «втуЛКа» (М16).
+function has(s, a) { return a.re ? a.re.test(s) : s.includes(a.w); }
+function hasWord(it, a) {
+  return has(NAME_L[it.ni], a) || has(BRAND_L[it.bi], a) || it.art.includes(a.w) || has(FITS_L[it.fi], a) ||
+    has(SIDE_L[it.si], a) || has(it.extraL, a) ||
+    (a.n.length >= 3 && a.n !== a.w && (it.art.includes(a.n) || it.extraL.includes(a.n)));
 }
+const altOf = w => ({ w, n: norm(w), re: /^[a-zа-я]{1,3}$/.test(w) ? new RegExp("(^|[^a-zа-я0-9])" + w) : null });
 // «Стойка» и «амортизатор» покупатели говорят про одно и то же: в этих двух разделах это синонимы
 const SHOCK = /^(амортизатор|аморт|стойк|стоек)/;
 const SHOCK_CATS = [0, 1];
 
 function filtered() {
   const terms = searchTerms(state.query) // русские названия машин и брендов — ru-search.js
-    .map(alts => ({ shock: alts.some(w => SHOCK.test(w)), alts: alts.map(w => [w, norm(w)]) }));
+    .map(alts => ({ shock: alts.some(w => SHOCK.test(w)), alts: alts.map(altOf) }));
   const compact = norm(state.query);
   const modelSet = state.model ? modelData(state.model) : null;
-  return ITEMS.filter(it => {
+  const list = ITEMS.filter(it => {
     if (state.cat !== null && it.cat !== state.cat) return false;
     if (state.sale && !it.sale) return false;
     if (modelSet) { if (!modelSet.has(it.fi)) return false; }
     else if (state.car && !it.cars.includes(state.car)) return false;
     if (state.brand && it.brand !== state.brand) return false;
     if (!terms.length) return true;
-    return terms.every(t => (t.shock && SHOCK_CATS.includes(it.cat)) || t.alts.some(([w, n]) => hasWord(it, w, n))) ||
+    return terms.every(t => (t.shock && SHOCK_CATS.includes(it.cat)) || t.alts.some(a => hasWord(it, a))) ||
       (compact.length >= 3 && (it.art.includes(compact) || it.extraL.includes(compact)));
   });
+  if (!terms.length) return list;
+  // Сначала товары, у которых название начинается с искомого слова («Диск тормозной» раньше «Колодки … дисковые»),
+  // потом те, где слов запроса в названии больше; внутри — прежний порядок (М16)
+  const shockStart = /^(амортизатор|стойк)/;
+  const rank = it => {
+    const name = NAME_L[it.ni];
+    const starts = terms.some(t => (t.shock && shockStart.test(name)) || t.alts.some(a => a.w.length >= 3 && name.startsWith(a.w)));
+    const inName = terms.reduce((s, t) => s + (t.alts.some(a => has(name, a)) ? 1 : 0), 0);
+    return (starts ? 100 : 0) + inName;
+  };
+  return list.map((it, i) => [it, rank(it), i]).sort((a, b) => b[1] - a[1] || a[2] - b[2]).map(x => x[0]);
 }
 
 // «Наличие уточнять» — или, если в прайсе номер снят и заменён, серая плашка с новым номером
