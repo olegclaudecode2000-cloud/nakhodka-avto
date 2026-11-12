@@ -112,12 +112,16 @@ RU_DICT.forEach(([latin, ru]) => {
 RU_PHRASES.sort((a, b) => b[0].length - a[0].length);
 RU_PHRASES.forEach(p => { p[2] = new RegExp("(^|\\s)" + p[0].replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "[а-я]*(?=\\s|$)", "g"); });
 
+// Служебные слова не ищем: «амортизаторы на камри», «стойки для филдера», «купить колодки» (12.11.2026)
+const RU_SKIP = new Set(["на", "для", "в", "во", "от", "к", "ко", "с", "со", "по", "под", "и", "или", "а", "у", "из", "ли", "мне",
+  "купить", "куплю", "цена", "цены", "стоимость", "нужен", "нужна", "нужно", "нужны", "есть", "подешевле", "недорого"]);
+
 // Запрос → список слов; у каждого слова варианты написания. Товар подходит, если нашлось по варианту каждого слова.
 function searchTerms(query) {
   let q = ruClean(query);
   const terms = [];
   RU_PHRASES.forEach(([, alts, re]) => { q = q.replace(re, () => { terms.push(alts); return " "; }); });
-  q.split(/\s+/).filter(Boolean).forEach(w => {
+  q.split(/\s+/).filter(w => w && !RU_SKIP.has(w)).forEach(w => {
     const key = ruStem(w.replace(/-/g, ""));
     const alts = RU_WORDS.get(key);
     terms.push([ruStem(w), ...(alts || [])]);

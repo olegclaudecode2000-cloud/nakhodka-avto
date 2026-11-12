@@ -35,6 +35,36 @@ const ICONS = [
 // Кнопки «Написать в MAX» на странице появляются, только когда задана ссылка
 if (MAX_LINK) document.querySelectorAll("[data-max]").forEach(el => { el.href = MAX_LINK; el.hidden = false; });
 
+// Открыть MAX и положить готовый текст в буфер. Окно открываем сразу, в момент нажатия:
+// айфон (Safari) не открывает окно, если сначала ждать копирования (12.11.2026).
+// Ответ: true — текст скопирован, false — нет (тогда покажем текст на странице).
+function openMaxWith(text) {
+  let copying;
+  try { copying = navigator.clipboard.writeText(text); } catch (err) { copying = Promise.reject(err); }
+  window.open(MAX_LINK, "_blank", "noopener");
+  return Promise.resolve(copying).then(() => true, () => false);
+}
+
+// «Назад» на телефоне закрывает окно товара или списка, а не уводит с сайта (12.11.2026):
+// открыли окно — добавили шаг в историю, закрыли окно — убрали его
+function historyOpen(dlg, url) {
+  if (dlg.dataset.back) history.replaceState({ dlg: dlg.id }, "", url);
+  else { history.pushState({ dlg: dlg.id }, "", url); dlg.dataset.back = "1"; }
+}
+function historyClose(dlg) {
+  if (dlg.dataset.back) { delete dlg.dataset.back; history.back(); }
+  // Браузер сообщает о закрытии чуть позже: если уже открыто другое окно — его адрес не трогаем
+  else if (!document.querySelector("dialog[open]")) history.replaceState(null, "", location.pathname + location.search);
+}
+// Одно окно сменяет другое (товар → список и обратно) — шаг истории переходит к новому окну
+function historyHandOver(from, to) {
+  if (from.dataset.back) { delete from.dataset.back; to.dataset.back = "1"; }
+}
+// Закрыть окно и сразу убрать его шаг из истории — не ждём события «close»: браузер присылает его с задержкой,
+// а в фоновой вкладке может не прислать вовсе. Событие «close» остаётся для закрытия клавишей Esc.
+function closeDialog(dlg) { if (dlg.open) dlg.close(); historyClose(dlg); }
+addEventListener("popstate", () => document.querySelectorAll("dialog[open]").forEach(d => { delete d.dataset.back; closeDialog(d); }));
+
 // «Подберём по номеру кузова»: копируем заготовку сообщения и открываем MAX
 const PODBOR_TEXT = "Здравствуйте! Подберите, пожалуйста: ___ (например, передние амортизаторы). Номер кузова: ___";
 document.querySelectorAll("[data-podbor]").forEach(btn => {
@@ -42,10 +72,10 @@ document.querySelectorAll("[data-podbor]").forEach(btn => {
   btn.hidden = false;
   btn.addEventListener("click", async () => {
     const tip = document.getElementById("podborTip");
-    try { await navigator.clipboard.writeText(PODBOR_TEXT); tip.textContent = "Заготовка сообщения скопирована — вставьте её в чат MAX и допишите."; }
-    catch { tip.textContent = "Напишите в MAX: " + PODBOR_TEXT; }
+    tip.textContent = await openMaxWith(PODBOR_TEXT)
+      ? "Заготовка сообщения скопирована — вставьте её в чат MAX и допишите."
+      : "Напишите в MAX: " + PODBOR_TEXT;
     tip.hidden = false;
-    window.open(MAX_LINK, "_blank", "noopener");
   });
 });
 
@@ -89,7 +119,7 @@ function addParts(names, fits, rows) {
     const it = {
       i: ITEMS.length, cat: r[0], bi: r[1], brand: D.b[r[1]], article: String(r[2]), ni: r[3], name: NAMES[r[3]],
       si: r[4], side: D.s[r[4]], fi: r[5], fits: FITS[r[5]], price: r[6], sale: r[7] === 1,
-      extra: r[8], repl: r[9] || "", art: norm(r[2]), isMain: MAIN_BRAND[r[1]], place: mergePlace(SIDE_PLACE[r[4]], NAME_PLACE[r[3]], FITS_PLACE[r[5]]),
+      extra: r[8], extraL: low(r[8]), repl: r[9] || "", art: norm(r[2]), isMain: MAIN_BRAND[r[1]], place: mergePlace(SIDE_PLACE[r[4]], NAME_PLACE[r[3]], FITS_PLACE[r[5]]),
       cars: FITS_CARS[r[5]],
     };
     FITS_USE[it.fi]++;
@@ -124,7 +154,14 @@ addParts(D.n, D.f, D.p); // первая часть — сразу
 
 // Модель ищем отдельным словом: «Fit» не находится в «FITS», а «RX» находится в «RX300»
 const escRe = s => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-const modelRe = m => new RegExp("(^|[^A-Z0-9])" + escRe(m.toUpperCase()).replace(/[-\s]/g, "[-\\s]?") + "(?![A-Z])");
+// Модели, которые в прайсах пишут по-разному: «RAV 4», «MARK 2», «STEP WGN», «LC200» (12.11.2026). Как в seo_stranicy.py
+const MODEL_PATTERNS = {
+  "RAV4": "RAV ?-?4", "Mark II": "MARK ?-?(II|2)(?![A-Z0-9])", "Stepwgn": "STEP ?-?W(GN|AGON)", "Funcargo": "FUN ?CARGO",
+  "Hiace": "HI-?ACE", "4Runner": "4 ?RUNNER", "Bluebird": "BLUE ?BIRD", "Wingroad": "WING ?ROAD",
+  "Land Cruiser": "LAND ?CRUISER(?! ?PRADO)|L\\. ?CRUISER(?! ?PRADO)|(^|[^A-Z0-9])LC ?-?(70|80|100|105|120|200|300)(?![0-9])",
+};
+const modelRe = m => MODEL_PATTERNS[m] ? new RegExp(MODEL_PATTERNS[m])
+  : new RegExp("(^|[^A-Z0-9])" + escRe(m.toUpperCase()).replace(/[-\s]/g, "[-\\s]?") + "(?![A-Z])");
 // Какие строки применимости подходят модели — считаем, только когда выбрали марку (после догрузки — заново)
 let MODEL_FITS = {}, MODEL_COUNT = {};
 function modelData(m) {
@@ -219,14 +256,20 @@ suggest(brandInput, $("brandList"), q => {
 });
 brandInput.addEventListener("search", () => { if (!brandInput.value && state.brand) { state.brand = ""; reset(); } });
 
-// Каждое слово запроса должно найтись хоть где-то: бренд, артикул, название, сторона, машина, раздел, номера
-function hasWord(it, w) {
+// Каждое слово запроса должно найтись хоть где-то: бренд, артикул, название, сторона, машина, раздел, номера.
+// n — то же слово без дефисов и точек: «340-010» находит артикул 340010 («KYB 340-010»)
+function hasWord(it, w, n) {
   return NAME_L[it.ni].includes(w) || BRAND_L[it.bi].includes(w) || it.art.includes(w) || FITS_L[it.fi].includes(w) ||
-    SIDE_L[it.si].includes(w) || CAT_L[it.cat].includes(w) || low(it.extra).includes(w);
+    SIDE_L[it.si].includes(w) || CAT_L[it.cat].includes(w) || it.extraL.includes(w) ||
+    (n.length >= 3 && n !== w && (it.art.includes(n) || it.extraL.includes(n)));
 }
+// «Стойка» и «амортизатор» покупатели говорят про одно и то же: в этих двух разделах это синонимы
+const SHOCK = /^(амортизатор|аморт|стойк|стоек)/;
+const SHOCK_CATS = [0, 1];
 
 function filtered() {
-  const terms = searchTerms(state.query); // русские названия машин и брендов — ru-search.js
+  const terms = searchTerms(state.query) // русские названия машин и брендов — ru-search.js
+    .map(alts => ({ shock: alts.some(w => SHOCK.test(w)), alts: alts.map(w => [w, norm(w)]) }));
   const compact = norm(state.query);
   const modelSet = state.model ? modelData(state.model) : null;
   return ITEMS.filter(it => {
@@ -236,8 +279,8 @@ function filtered() {
     else if (state.car && !it.cars.includes(state.car)) return false;
     if (state.brand && it.brand !== state.brand) return false;
     if (!terms.length) return true;
-    return terms.every(alts => alts.some(w => hasWord(it, w))) ||
-      (compact.length >= 3 && (it.art.includes(compact) || it.extra.toLowerCase().includes(compact)));
+    return terms.every(t => (t.shock && SHOCK_CATS.includes(it.cat)) || t.alts.some(([w, n]) => hasWord(it, w, n))) ||
+      (compact.length >= 3 && (it.art.includes(compact) || it.extraL.includes(compact)));
   });
 }
 
@@ -330,10 +373,8 @@ function renderEmptyAsk() {
 }
 $("emptyMax").addEventListener("click", async () => {
   const tip = $("emptyTip");
-  try { await navigator.clipboard.writeText(emptyAsk()); tip.textContent = "Текст скопирован — вставьте его в чат MAX и отправьте."; }
-  catch { tip.textContent = "Напишите в MAX: " + emptyAsk(); }
+  tip.textContent = await openMaxWith(emptyAsk()) ? "Текст скопирован — вставьте его в чат MAX и отправьте." : "Напишите в MAX: " + emptyAsk();
   tip.hidden = false;
-  window.open(MAX_LINK, "_blank", "noopener");
 });
 
 const reset = () => { state.shown = PAGE; render(); };
@@ -487,7 +528,7 @@ function openPart(i) {
       ${related("Для этой же машины", sameCar(it), "Тот же бренд и та же машина — например, вторая сторона, чтобы поменять парой.")}
       ${related("Аналоги других брендов", analogs(it), "Подобраны по коду кузова и месту установки. Точную совместимость сверим по телефону.")}
     </div>`;
-  history.replaceState(null, "", "#t=" + encodeURIComponent(partKey(it)));
+  historyOpen(modal, "#t=" + encodeURIComponent(partKey(it)));
   if (!modal.open) modal.showModal();
   modal.scrollTop = 0;
 }
@@ -504,8 +545,8 @@ function openFromLink() {
   const it = key && BY_KEY.get(key);
   if (it) openPart(it.i);
 }
-// Окно закрыли — убираем товар из адреса страницы
-modal.addEventListener("close", () => history.replaceState(null, "", location.pathname + location.search));
+// Окно закрыли — убираем товар из адреса страницы (и шаг из истории)
+modal.addEventListener("close", () => historyClose(modal));
 
 // Амортизаторы, стойки и пружины меняют парой: показываем цену за пару и вторую сторону
 const PAIR_CATS = { 0: "Амортизаторы", 1: "Стойки", 2: "Пружины" };
@@ -595,28 +636,34 @@ function renderList() {
     <p class="ask__tip" id="listTip" hidden></p>`;
 }
 function openList() {
-  if (modal.open) modal.close();
+  if (modal.open) { historyHandOver(modal, listModal); closeDialog(modal); }
   listModal.showModal();
+  historyOpen(listModal, location.pathname + location.search);
   renderList();
 }
 listFab.addEventListener("click", openList);
-$("listClose").addEventListener("click", () => listModal.close());
+listModal.addEventListener("close", () => historyClose(listModal));
+$("listClose").addEventListener("click", () => closeDialog(listModal));
 listModal.addEventListener("click", async e => {
-  if (e.target === listModal) { listModal.close(); return; }
+  if (e.target === listModal) { closeDialog(listModal); return; }
   const t = e.target.closest("button");
   if (!t) return;
   const find = k => wish.find(w => w.k === k);
   if (t.dataset.plus) { find(t.dataset.plus).q++; saveList(); }
   else if (t.dataset.minus) { const w = find(t.dataset.minus); if (w.q > 1) { w.q--; saveList(); } }
   else if (t.dataset.del) { wish = wish.filter(w => w.k !== t.dataset.del); saveList(); }
-  else if (t.dataset.openPart) { listModal.close(); openPart(Number(t.dataset.openPart)); }
+  else if (t.dataset.openPart) { historyHandOver(listModal, modal); closeDialog(listModal); openPart(Number(t.dataset.openPart)); }
   else if ("listClear" in t.dataset) { if (confirm("Очистить список?")) { wish = []; saveList(); } }
-  else if ("listCopy" in t.dataset || "listMax" in t.dataset) {
+  else if ("listMax" in t.dataset) {
     const tip = $("listTip");
-    try { await navigator.clipboard.writeText(listText()); tip.textContent = "listMax" in t.dataset ? "Список скопирован — вставьте его в чат MAX." : "Список скопирован."; }
+    tip.textContent = await openMaxWith(listText()) ? "Список скопирован — вставьте его в чат MAX." : listText();
+    tip.hidden = false;
+  }
+  else if ("listCopy" in t.dataset) {
+    const tip = $("listTip");
+    try { await navigator.clipboard.writeText(listText()); tip.textContent = "Список скопирован."; }
     catch { tip.textContent = listText(); }
     tip.hidden = false;
-    if ("listMax" in t.dataset) window.open(MAX_LINK, "_blank", "noopener");
   }
 });
 renderList();
@@ -715,18 +762,15 @@ modalBody.addEventListener("click", async e => {
     tip.hidden = false;
   }
   if (e.target.closest("[data-ask-max]")) {
-    try { await navigator.clipboard.writeText(askText(it)); tip.textContent = "Текст вопроса скопирован — вставьте его в чат MAX."; }
-    catch { tip.textContent = askText(it); }
+    tip.textContent = await openMaxWith(askText(it)) ? "Текст вопроса скопирован — вставьте его в чат MAX." : askText(it);
     tip.hidden = false;
-    window.open(MAX_LINK, "_blank", "noopener");
   }
 });
 grid.addEventListener("click", async e => {
   const ask = e.target.closest("[data-ask]");
   if (ask) {
     const it = byIndex(Number(ask.dataset.ask));
-    try { await navigator.clipboard.writeText(askText(it)); ask.textContent = "Текст скопирован — вставьте в MAX"; } catch { /* без буфера — просто откроем MAX */ }
-    window.open(MAX_LINK, "_blank", "noopener");
+    if (await openMaxWith(askText(it))) ask.textContent = "Текст скопирован — вставьте в MAX"; // без буфера — просто открылся MAX
     return;
   }
   const c = e.target.closest(".card[data-i]");
@@ -736,8 +780,8 @@ grid.addEventListener("keydown", e => {
   const c = e.target.closest(".card[data-i]");
   if (c && e.key === "Enter") openPart(Number(c.dataset.i));
 });
-$("modalClose").addEventListener("click", () => modal.close());
-modal.addEventListener("click", e => { if (e.target === modal) modal.close(); });
+$("modalClose").addEventListener("click", () => closeDialog(modal));
+modal.addEventListener("click", e => { if (e.target === modal) closeDialog(modal); });
 
 // Пришли со страницы раздела или марки (?razdel=amortizatory&marka=Toyota&model=Camry) — сразу ставим фильтры
 // Порядок должен совпадать с CAT_SLUGS в заметки/seo_stranicy.py
@@ -787,6 +831,15 @@ setInterval(showOpenStatus, 60 * 1000);
 
 // Вторая часть каталога: догружаем после показа страницы, потом всё пересчитываем и перерисовываем
 window.addPartsChunk = chunk => {
+  // Части от разных обновлений прайса (браузер помнит старую первую часть) склеивать нельзя —
+  // один раз перезагружаем страницу, чтобы обе части пришли свежими
+  if (chunk.v && chunk.v !== D.v) {
+    let again = false;
+    try { again = sessionStorage.getItem("ap-reload") === chunk.v; sessionStorage.setItem("ap-reload", chunk.v); } catch { again = true; }
+    if (!again) { location.reload(); return; }
+    count.textContent = "Каталог обновился — обновите страницу, чтобы увидеть все товары.";
+    return;
+  }
   addParts(chunk.n, chunk.f, chunk.p);
   FULL = true;
   MODEL_FITS = {}; MODEL_COUNT = {}; CAT_INFO.clear();
