@@ -106,14 +106,17 @@ const ITEMS = [];
 const MAIN_CATS = [0, 1, 2];
 const isMainCat = it => MAIN_CATS.includes(it.cat);
 let FULL = false; // догрузилась ли вторая часть каталога
+let OEM = 0; // дополнительные номера data/oem.js: 0 — не грузили, 1 — грузим, 2 — загружены
 
-// Добавить часть каталога: словари названий и применимости дополняются, товары — в общий список
-function addParts(names, fits, rows) {
+// Добавить часть каталога: словари названий и применимости дополняются, товары — в общий список.
+// sort=false — для промежуточных частей: сортируем один раз, когда пришла последняя (М32)
+function addParts(names, fits, rows, sort = true) {
   names.forEach(n => { NAMES.push(n); NAME_L.push(low(n)); NAME_PLACE.push(mergePlace(placeOf(n), nameRe(n))); });
   fits.forEach(f => {
     const l = low(f);
     FITS.push(f); FITS_L.push(l); FITS_U.push(f.toUpperCase()); FITS_PLACE.push(fitsRe(f));
-    FITS_CARS.push(CARS.filter(c => l.includes(c.toLowerCase()))); FITS_USE.push(0);
+    FITS_CARS.push([...CARS.filter(c => l.includes(c.toLowerCase())), ...MORE_CARS.filter(([, re]) => re.test(l)).map(([c]) => c)]);
+    FITS_USE.push(0);
   });
   rows.forEach(r => {
     const it = {
@@ -125,7 +128,7 @@ function addParts(names, fits, rows) {
     FITS_USE[it.fi]++;
     ITEMS.push(it);
   });
-  ITEMS.sort((a, b) => (isMainCat(b) - isMainCat(a)) || (b.isMain - a.isMain) || a.cat - b.cat);
+  if (sort) ITEMS.sort((a, b) => (isMainCat(b) - isMainCat(a)) || (b.isMain - a.isMain) || a.cat - b.cat);
 }
 
 // Марки и модели для подбора «марка → модель»
@@ -144,6 +147,14 @@ const MODELS = {
   Kia: ["Sorento", "Soul", "Venga", "Rio", "Sportage", "Ceed", "Optima"],
 };
 const CARS = Object.keys(MODELS);
+// Другие марки — в выпадающем списке «Другая марка…», без выбора модели (проверка 12.11.2026, М22)
+const MORE_CARS = [["Volkswagen", /volkswagen|\bvw\b/], ["BMW", /\bbmw\b/], ["Mercedes-Benz", /mercedes|\bbenz\b/], ["Audi", /\baudi\b/],
+  ["Ford", /\bford\b/], ["Renault", /renault/], ["Skoda", /skoda|škoda/], ["Lada", /\blada\b|ваз/], ["Opel", /\bopel\b/],
+  ["Chevrolet", /chevrolet/], ["Peugeot", /peugeot/], ["Citroen", /citro[eë]n/], ["Volvo", /volvo/], ["Infiniti", /infiniti/],
+  ["Daewoo", /daewoo/], ["Chery", /\bchery\b/], ["Geely", /geely/], ["SsangYong", /ssang ?yong/], ["Land Rover", /land ?rover/],
+  ["Jeep", /\bjeep\b/], ["Fiat", /\bfiat\b/], ["Porsche", /porsche/], ["Haval", /haval/], ["Great Wall", /great wall/]];
+const MORE_NAMES = MORE_CARS.map(([c]) => c);
+const ALL_CARS = [...CARS, ...MORE_NAMES];
 // Логотипы марок (images/cars): одноцветные, окрашиваются цветом текста кнопки
 const CAR_LOGO = { Toyota: "toyota.svg", Nissan: "nissan.svg", Honda: "honda.svg", Mazda: "mazda.svg", Mitsubishi: "mitsubishi.svg",
   Subaru: "subaru.svg", Suzuki: "suzuki.svg", Lexus: "lexus.png", Daihatsu: "daihatsu.png", Isuzu: "isuzu.png", Hyundai: "hyundai.svg", Kia: "kia.svg" };
@@ -353,13 +364,16 @@ function renderChips() {
   // Марки, модели и бренд — только те, что есть в выбранном разделе; иначе выбор сбрасывается
   const info = catInfo();
   const cars = CARS.filter(c => info.cars.has(c));
-  if (state.car && !cars.includes(state.car)) { state.car = ""; state.model = ""; }
+  const others = MORE_NAMES.filter(c => info.cars.has(c));
+  if (state.car && !cars.includes(state.car) && !others.includes(state.car)) { state.car = ""; state.model = ""; }
   if (state.brand && !info.brands[state.brand]) state.brand = "";
-  $("carChips").hidden = !cars.length;
+  $("carChips").hidden = !cars.length && !others.length;
   $("carChips").innerHTML = `<span class="chips__label">Машина:</span>` +
-    ["", ...cars].map(c => `<button class="chip chip--small chip--car ${state.car === c ? "is-active" : ""}" data-car="${c}">${carLogo(c)}${c || "Любая"}</button>`).join("");
+    ["", ...cars].map(c => `<button class="chip chip--small chip--car ${state.car === c ? "is-active" : ""}" data-car="${c}">${carLogo(c)}${c || "Любая"}</button>`).join("") +
+    (others.length ? `<select class="chip chip--small chip--select${others.includes(state.car) ? " is-active" : ""}" data-car-other aria-label="Другая марка">
+      <option value="">Другая марка…</option>${others.map(c => `<option value="${c}"${state.car === c ? " selected" : ""}>${c}</option>`).join("")}</select>` : "");
   const modelCount = m => info.models[m] ?? (info.models[m] = info.items.filter(it => modelData(m).has(it.fi)).length);
-  const models = state.car ? MODELS[state.car].filter(m => modelCount(m) > 0) : [];
+  const models = state.car && MODELS[state.car] ? MODELS[state.car].filter(m => modelCount(m) > 0) : [];
   if (state.model && !models.includes(state.model)) state.model = "";
   $("modelRow").hidden = !models.length;
   $("modelSelect").innerHTML = `<option value="">Все модели ${state.car}</option>` +
@@ -374,10 +388,11 @@ function render() {
     (state.model ? ` для ${state.car} ${state.model}` : state.car ? ` для ${state.car}` : "");
   // Пока вторая часть каталога в пути — честно пишем, что догружаем, и не говорим «ничего не нашлось»
   const partial = !FULL && !(state.cat !== null && MAIN_CATS.includes(state.cat));
+  const oemWait = needOem(list); // по номеру ничего — догружаем все оригинальные номера и ищем ещё раз
   count.textContent = list.length
     ? `Найдено: ${list.length.toLocaleString("ru-RU")}${partial ? " · загружаем весь каталог…" : ""}`
-    : partial ? "Загружаем весь каталог…" : "";
-  empty.hidden = list.length > 0 || partial;
+    : partial ? "Загружаем весь каталог…" : oemWait ? "Ищем по всем оригинальным номерам…" : "";
+  empty.hidden = list.length > 0 || partial || oemWait;
   if (!empty.hidden) renderEmptyAsk();
   grid.innerHTML = list.slice(0, state.shown).map(card).join("");
   const left = list.length - state.shown;
@@ -457,6 +472,13 @@ $("carChips").addEventListener("click", e => {
   const b = e.target.closest("[data-car]");
   if (!b) return;
   state.car = b.dataset.car;
+  state.model = "";
+  rememberCar();
+  reset();
+});
+$("carChips").addEventListener("change", e => {
+  if (!e.target.matches("[data-car-other]")) return;
+  state.car = e.target.value;
   state.model = "";
   rememberCar();
   reset();
@@ -819,7 +841,7 @@ const CAT_SLUGS = ["amortizatory", "stoyki", "pruzhiny", "opory", "pylniki", "ry
 const params = new URLSearchParams(location.search);
 const fromSlug = CAT_SLUGS.indexOf(params.get("razdel"));
 if (fromSlug >= 0) state.cat = fromSlug;
-if (CARS.includes(params.get("marka"))) {
+if (ALL_CARS.includes(params.get("marka"))) {
   state.car = params.get("marka");
   if ((MODELS[state.car] || []).includes(params.get("model"))) state.model = params.get("model");
 }
@@ -828,7 +850,7 @@ if (CARS.includes(params.get("marka"))) {
 if (!params.has("razdel") && !params.has("marka")) {
   try {
     const saved = JSON.parse(localStorage.getItem(CAR_KEY) || "null");
-    if (saved && CARS.includes(saved.car)) {
+    if (saved && ALL_CARS.includes(saved.car)) {
       state.car = saved.car;
       if ((MODELS[saved.car] || []).includes(saved.model)) state.model = saved.model;
     }
@@ -869,7 +891,10 @@ window.addPartsChunk = chunk => {
     count.textContent = "Каталог обновился — обновите страницу, чтобы увидеть все товары.";
     return;
   }
-  addParts(chunk.n, chunk.f, chunk.p);
+  // Остальные разделы приходят несколькими файлами (М32): между ними браузер успевает отвечать на нажатия
+  const last = !chunk.of || chunk.i >= chunk.of;
+  addParts(chunk.n, chunk.f, chunk.p, last);
+  if (!last) { setTimeout(() => loadPart(chunk.i + 2), 0); return; }
   FULL = true;
   MODEL_FITS = {}; MODEL_COUNT = {}; CAT_INFO.clear();
   catCount = PART_CATEGORIES.map((_, n) => ITEMS.filter(it => it.cat === n).length);
@@ -880,10 +905,34 @@ window.addPartsChunk = chunk => {
   [...grid.children].forEach(c => { c.style.animation = "none"; }); // без повторной анимации уже видимых карточек
   if (!modal.open) openFromLink();
 };
-const rest = document.createElement("script");
-rest.src = `data/parts-2.js?v=${D.v || ""}`;
-rest.onerror = () => { count.textContent = "Не удалось загрузить весь каталог — обновите страницу."; };
-document.body.append(rest);
+function loadPart(n) {
+  const s = document.createElement("script");
+  s.src = `data/parts-${n}.js?v=${D.v || ""}`;
+  s.onerror = () => { count.textContent = "Не удалось загрузить весь каталог — обновите страницу."; };
+  document.body.append(s);
+}
+loadPart(2);
+
+// Дополнительные оригинальные номера (М19): грузим, только если поиск по номеру ничего не нашёл
+
+window.addOemNumbers = data => {
+  if (data.v !== D.v) { OEM = 2; render(); return; }
+  const byI = new Map(ITEMS.map(it => [it.i, it]));
+  Object.entries(data.m).forEach(([k, codes]) => { const it = byI.get(+k); if (it) it.extraL += " " + low(codes); });
+  OEM = 2;
+  render();
+};
+function needOem(list) {
+  if (list.length || !FULL || OEM === 2 || !/\d/.test(state.query) || norm(state.query).length < 5) return false;
+  if (OEM === 0) {
+    OEM = 1;
+    const s = document.createElement("script");
+    s.src = `data/oem.js?v=${D.v || ""}`;
+    s.onerror = () => { OEM = 2; render(); };
+    document.body.append(s);
+  }
+  return true;
+}
 
 // Шапка с анимацией белая только над светлым каталогом; над тёмным верхом и тёмным низом — снова тёмная
 const header = document.querySelector(".header");

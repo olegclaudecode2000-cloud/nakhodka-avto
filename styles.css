@@ -937,3 +937,6 @@ body { background: #eceef2; }
 .faq__answer b { color: #e8eaee; }
 .faq__more { margin: 18px 0 0; color: #b9c0ca; }
 .faq__more a { color: #ff9a9a; font-weight: 600; }
+
+/* «Другая марка…» в выборе машины (М22) */
+.chip--select { font: inherit; font-size: .85rem; padding: 4px 10px; border-radius: 999px; cursor: pointer; max-width: 100%; }
