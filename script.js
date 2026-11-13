@@ -164,11 +164,20 @@ const modelRe = m => MODEL_PATTERNS[m] ? new RegExp(MODEL_PATTERNS[m])
   : new RegExp("(^|[^A-Z0-9])" + escRe(m.toUpperCase()).replace(/[-\s]/g, "[-\\s]?") + "(?![A-Z])");
 // Какие строки применимости подходят модели — считаем, только когда выбрали марку (после догрузки — заново)
 let MODEL_FITS = {}, MODEL_COUNT = {};
+// В строке применимости другая марка, а своей нет — значит, модель чужая: Honda «Partner» ≠ Peugeot Partner,
+// Lexus «GS» ≠ Chrysler GS, Mazda «MPV» ≠ Peugeot 3008 MPV (проверка 12.11.2026, М21). Строки совсем без марки оставляем.
+const OTHER_MAKE = /PEUGEOT|CITRO[EË]N|CHRYSLER|DODGE|JEEP|FIAT|RENAULT|OPEL|FORD|CHEVROLET|VOLKSWAGEN|\bVW\b|AUDI|BMW|MERCEDES|SKODA|\bSEAT\b|VOLVO|LADA|DAEWOO|SSANG ?YONG|CHERY|GEELY|GREAT WALL|HAVAL|LIFAN|LAND ROVER|PORSCHE|JAGUAR|CADILLAC|\bGMC\b|HUMMER|LINCOLN|BUICK|SAAB|ALFA ROMEO|LANCIA/;
+const MODEL_CAR = {};
+Object.entries(MODELS).forEach(([car, list]) => list.forEach(m => { MODEL_CAR[m] = car; }));
 function modelData(m) {
   if (!MODEL_FITS[m]) {
-    const re = modelRe(m), set = new Set();
+    const re = modelRe(m), set = new Set(), car = MODEL_CAR[m];
     let n = 0;
-    FITS_U.forEach((f, fi) => { if (f && re.test(f)) { set.add(fi); n += FITS_USE[fi]; } });
+    FITS_U.forEach((f, fi) => {
+      if (!f || !re.test(f)) return;
+      if (OTHER_MAKE.test(f) && !FITS_CARS[fi].includes(car)) return;
+      set.add(fi); n += FITS_USE[fi];
+    });
     MODEL_FITS[m] = set; MODEL_COUNT[m] = n;
   }
   return MODEL_FITS[m];
@@ -617,17 +626,22 @@ function listText() {
   const lines = listRows().map((r, n) => `${n + 1}. ${r.it.brand} ${r.it.article} — ${r.it.name}${r.it.side ? " (" + r.it.side + ")" : ""} — ${r.q} шт. × ${money(r.it.price)}`);
   return `Здравствуйте! Хочу заказать / уточнить наличие:\n${lines.join("\n")}\nИтого по сайту: ${money(listTotal())}\nНомер кузова моей машины: \nСписок с сайта «Амортизаторы-Пружины».`;
 }
+// Сколько товаров выпало из списка, потому что их нет в новом прайсе — говорим об этом, а не молча убираем (М40)
+let listGone = 0;
+const goneNote = () => listGone
+  ? `<p class="related__hint">${listGone === 1 ? "Одного товара" : `${listGone} товаров`} из вашего списка нет в новом прайсе — мы убрали ${listGone === 1 ? "его" : "их"}. Подберём замену: напишите в MAX или позвоните.</p>`
+  : "";
 function renderList() {
   const n = wish.reduce((s, w) => s + w.q, 0);
   listFab.hidden = !wish.length;
   $("listCount").textContent = n;
   if (!listModal.open) return;
   if (!wish.length) {
-    listBody.innerHTML = `<h2>Список запроса</h2><p class="list__empty">Список пуст. Откройте товар и нажмите «Добавить в список запроса».</p>`;
+    listBody.innerHTML = `<h2>Список запроса</h2>${goneNote()}<p class="list__empty">Список пуст. Откройте товар и нажмите «Добавить в список запроса».</p>`;
     return;
   }
   listBody.innerHTML = `
-    <h2>Список запроса</h2>
+    <h2>Список запроса</h2>${goneNote()}
     <p class="related__hint">Отправьте список в MAX или по СМС — проверим наличие и ответим.</p>
     <div class="list">${listRows().map(r => `
       <div class="list__row">
@@ -860,7 +874,8 @@ window.addPartsChunk = chunk => {
   MODEL_FITS = {}; MODEL_COUNT = {}; CAT_INFO.clear();
   catCount = PART_CATEGORIES.map((_, n) => ITEMS.filter(it => it.cat === n).length);
   countBrands(); indexKeys();
-  wish = wish.filter(w => BY_KEY.has(w.k)); saveList(); // теперь ясно, каких товаров из списка больше нет
+  const was = wish.length;
+  wish = wish.filter(w => BY_KEY.has(w.k)); listGone = was - wish.length; saveList(); // теперь ясно, каких товаров из списка больше нет
   render();
   [...grid.children].forEach(c => { c.style.animation = "none"; }); // без повторной анимации уже видимых карточек
   if (!modal.open) openFromLink();
