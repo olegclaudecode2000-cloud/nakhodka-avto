@@ -47,8 +47,10 @@ function openMaxWith(text) {
 
 // «Назад» на телефоне закрывает окно товара или списка, а не уводит с сайта (12.11.2026):
 // открыли окно — добавили шаг в историю, закрыли окно — убрали его
+// Товар открыт по ссылке (#t=… уже в адресе) — шаг истории не добавляем, при закрытии просто чистим адрес (Н4)
+let openedByLink = false;
 function historyOpen(dlg, url) {
-  if (dlg.dataset.back) history.replaceState({ dlg: dlg.id }, "", url);
+  if (dlg.dataset.back || openedByLink) history.replaceState({ dlg: dlg.id }, "", url);
   else { history.pushState({ dlg: dlg.id }, "", url); dlg.dataset.back = "1"; }
 }
 function historyClose(dlg) {
@@ -80,8 +82,8 @@ document.querySelectorAll("[data-podbor]").forEach(btn => {
 });
 
 // Данные из прайсов: словари + строки [раздел, бренд#, артикул, название#, сторона#, применимость#, цена, распродажа, номера]
-// Каталог грузится двумя частями: data/parts-1.js (главные разделы, сразу) и data/parts-2.js (остальное, следом).
-// Бренды и стороны приходят целиком в первой части, названия и применимость — дополняются из второй.
+// Каталог грузится частями: data/parts-1.js (главные разделы, сразу), потом parts-2.js … parts-5.js (остальное, по очереди).
+// Бренды и стороны приходят целиком в первой части, названия и применимость — дополняются из следующих.
 const D = PARTS_DATA;
 const PART_CATEGORIES = D.c, PARTS_UPDATED = D.u;
 // Для поиска: заглавные и «ё» не важны («щётка» и «щетка» — одно и то же)
@@ -149,9 +151,9 @@ const MODELS = {
 const CARS = Object.keys(MODELS);
 // Другие марки — в выпадающем списке «Другая марка…», без выбора модели (проверка 12.11.2026, М22)
 const MORE_CARS = [["Volkswagen", /volkswagen|\bvw\b/], ["BMW", /\bbmw\b/], ["Mercedes-Benz", /mercedes|\bbenz\b/], ["Audi", /\baudi\b/],
-  ["Ford", /\bford\b/], ["Renault", /renault/], ["Skoda", /skoda|škoda/], ["Lada", /\blada\b|ваз/], ["Opel", /\bopel\b/],
+  ["Ford", /\bford\b/], ["Renault", /renault/], ["Skoda", /skoda|škoda/], ["Lada", /\blada\b|ваз|\bvaz\b/], ["Opel", /\bopel\b/],
   ["Chevrolet", /chevrolet/], ["Peugeot", /peugeot/], ["Citroen", /citro[eë]n/], ["Volvo", /volvo/], ["Infiniti", /infiniti/],
-  ["Daewoo", /daewoo/], ["Chery", /\bchery\b/], ["Geely", /geely/], ["SsangYong", /ssang ?yong/], ["Land Rover", /land ?rover/],
+  ["Daewoo", /daewoo/], ["Seat", /\bseat\b/], ["Acura", /\bacura\b/], ["Chery", /\bchery\b/], ["Geely", /geely/], ["SsangYong", /ssang ?yong/], ["Land Rover", /land ?rover/],
   ["Jeep", /\bjeep\b/], ["Fiat", /\bfiat\b/], ["Porsche", /porsche/], ["Haval", /haval/], ["Great Wall", /great wall/]];
 const MORE_NAMES = MORE_CARS.map(([c]) => c);
 const ALL_CARS = [...CARS, ...MORE_NAMES];
@@ -281,15 +283,22 @@ brandInput.addEventListener("search", () => { if (!brandInput.value && state.bra
 // a.n — слово без дефисов и точек: «340-010» находит артикул 340010 («KYB 340-010»).
 // a.re — короткие слова из букв (до 3) ищем только с начала слова: «лк» не находится внутри «втуЛКа» (М16).
 function has(s, a) { return a.re ? a.re.test(s) : s.includes(a.w); }
+// Название без дефисов и пробелов — для вязкости масла: «5w30» находит «5W-30» и наоборот (Н2)
+const NAME_N = [];
+const nameN = ni => NAME_N[ni] ?? (NAME_N[ni] = norm(NAME_L[ni]));
 function hasWord(it, a) {
   return has(NAME_L[it.ni], a) || has(BRAND_L[it.bi], a) || it.art.includes(a.w) || has(FITS_L[it.fi], a) ||
     has(SIDE_L[it.si], a) || has(it.extraL, a) ||
+    (a.visc && nameN(it.ni).includes(a.n)) ||
     (a.n.length >= 3 && a.n !== a.w && (it.art.includes(a.n) || it.extraL.includes(a.n)));
 }
-const altOf = w => ({ w, n: norm(w), re: /^[a-zа-я]{1,3}$/.test(w) ? new RegExp("(^|[^a-zа-я0-9])" + w) : null });
-// «Стойка» и «амортизатор» покупатели говорят про одно и то же: в этих двух разделах это синонимы
+const altOf = w => ({ w, n: norm(w), visc: /^\d{1,2}w-?\d{1,2}$/.test(w), re: /^[a-zа-я]{1,3}$/.test(w) ? new RegExp("(^|[^a-zа-я0-9])" + w) : null });
+// «Стойка» и «амортизатор» покупатели говорят про одно и то же: в этих двух разделах это синонимы.
+// В опорах и пыльниках тоже: «опора стойки» = «опора амортизатора» (Н1) — если в запросе есть ещё слово
 const SHOCK = /^(амортизатор|аморт|стойк|стоек)/;
 const SHOCK_CATS = [0, 1];
+const SHOCK_NEAR = [3, 4];
+const shockOk = (it, many) => SHOCK_CATS.includes(it.cat) || (many && SHOCK_NEAR.includes(it.cat) && /стойк|амортиз/.test(NAME_L[it.ni]));
 
 function filtered() {
   const terms = searchTerms(state.query) // русские названия машин и брендов — ru-search.js
@@ -303,7 +312,7 @@ function filtered() {
     else if (state.car && !it.cars.includes(state.car)) return false;
     if (state.brand && it.brand !== state.brand) return false;
     if (!terms.length) return true;
-    return terms.every(t => (t.shock && SHOCK_CATS.includes(it.cat)) || t.alts.some(a => hasWord(it, a))) ||
+    return terms.every(t => (t.shock && shockOk(it, terms.length > 1)) || t.alts.some(a => hasWord(it, a))) ||
       (compact.length >= 3 && (it.art.includes(compact) || it.extraL.includes(compact)));
   });
   if (!terms.length) return list;
@@ -589,7 +598,7 @@ function openFromLink() {
   let key = "";
   try { key = m ? decodeURIComponent(m[1]) : ""; } catch { key = ""; } // кривая ссылка — просто не открываем товар
   const it = key && BY_KEY.get(key);
-  if (it) openPart(it.i);
+  if (it) { openedByLink = !modal.open; openPart(it.i); openedByLink = false; }
 }
 // Окно закрыли — убираем товар из адреса страницы (и шаг из истории)
 modal.addEventListener("close", () => historyClose(modal));
@@ -861,7 +870,7 @@ render();
 openFromLink();
 window.addEventListener("hashchange", openFromLink);
 
-// «Сейчас открыто / закрыто» — по времени Находки (UTC+10). Дни работы уточнить у мамы; пока — каждый день.
+// «Сейчас открыто / закрыто» — по времени Находки (UTC+10). Мама работает каждый день, без выходных (13.11.2026).
 const HOURS = { open: 10, close: 15, days: [0, 1, 2, 3, 4, 5, 6] };
 const DAY_NAMES = ["в воскресенье", "в понедельник", "во вторник", "в среду", "в четверг", "в пятницу", "в субботу"];
 function openStatus() {
@@ -923,7 +932,8 @@ window.addOemNumbers = data => {
   render();
 };
 function needOem(list) {
-  if (list.length || !FULL || OEM === 2 || !/\d/.test(state.query) || norm(state.query).length < 5) return false;
+  // Только если в запросе есть слово, похожее на номер детали: от 6 знаков и с цифрой (Н3)
+  if (list.length || !FULL || OEM === 2 || !state.query.split(/\s+/).some(w => /\d/.test(w) && norm(w).length >= 6)) return false;
   if (OEM === 0) {
     OEM = 1;
     const s = document.createElement("script");

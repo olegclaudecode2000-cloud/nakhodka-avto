@@ -940,3 +940,11 @@ body { background: #eceef2; }
 
 /* «Другая марка…» в выборе машины (М22) */
 .chip--select { font: inherit; font-size: .85rem; padding: 4px 10px; border-radius: 999px; cursor: pointer; max-width: 100%; }
+
+/* Телефон: «Другие запчасти» — одной лентой, листается пальцем; до каталога короче (проверка 14.11.2026) */
+@media (max-width: 520px) {
+  .hero .tiles__other { display: flex; overflow-x: auto; gap: 8px; padding-bottom: 6px; scroll-snap-type: x proximity; scrollbar-width: none; }
+  .hero .tiles__other::-webkit-scrollbar { display: none; }
+  .hero .tiles__other .tile { flex: 0 0 29%; scroll-snap-align: start; }
+  .tiles__label--other::after { content: " · листайте →"; text-transform: none; letter-spacing: 0; font-weight: 500; }
+}
