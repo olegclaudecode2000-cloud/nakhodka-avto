@@ -223,6 +223,9 @@ const SALE_COUNT = D.sale ?? ITEMS.filter(it => it.sale).length;
 
 // Цифры в шапке
 document.querySelectorAll("[data-total]").forEach(el => el.textContent = (D.total ?? ITEMS.length).toLocaleString("ru-RU"));
+// «75 941 позиция» — склоняем слово (проверка 17.11.2026, М3)
+const posWord = n => n % 10 === 1 && n % 100 !== 11 ? "позиция" : n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 10 || n % 100 >= 20) ? "позиции" : "позиций";
+document.querySelectorAll("[data-total-word]").forEach(el => el.textContent = posWord(D.total ?? ITEMS.length));
 const BRANDS_LEFT = (D.brands ?? D.b.length) - 2;
 document.querySelectorAll("[data-brands]").forEach(el => el.textContent = BRANDS_LEFT);
 // «252 бренда», «251 бренд», «255 брендов»
