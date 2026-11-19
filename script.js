@@ -372,7 +372,7 @@ function renderChips() {
   $("categoryChips").innerHTML =
     `<button class="chip ${state.cat === null && !state.sale ? "is-active" : ""}" data-cat="">Все разделы</button>` +
     (SALE_COUNT ? `<button class="chip chip--sale ${state.sale ? "is-active" : ""}" data-sale>Распродажа (${SALE_COUNT})</button>` : "") +
-    PART_CATEGORIES.map((c, n) => `<button class="chip${MAIN_CATS.includes(n) ? " chip--main" : ""} ${state.cat === n ? "is-active" : ""}" data-cat="${n}">${escapeHtml(c)}</button>`).join("");
+    PART_CATEGORIES.map((c, n) => !c ? "" : `<button class="chip${MAIN_CATS.includes(n) ? " chip--main" : ""} ${state.cat === n ? "is-active" : ""}" data-cat="${n}">${escapeHtml(c)}</button>`).join("");
   // Марки, модели и бренд — только те, что есть в выбранном разделе; иначе выбор сбрасывается
   const info = catInfo();
   const cars = CARS.filter(c => info.cars.has(c));
@@ -462,7 +462,7 @@ $("tiles").innerHTML = `
       </span>
     </button>`).join("")}</div>
   <p class="tiles__label tiles__label--other">Другие запчасти</p>
-  <div class="tiles__other">${PART_CATEGORIES.map((_, n) => n).filter(n => !MAIN_CATS.includes(n)).map(tile).join("")}</div>`;
+  <div class="tiles__other">${PART_CATEGORIES.map((_, n) => n).filter(n => PART_CATEGORIES[n] && !MAIN_CATS.includes(n)).map(tile).join("")}</div>`;
 $("tiles").addEventListener("click", e => {
   const t = e.target.closest(".tile");
   if (!t) return;
@@ -852,7 +852,7 @@ const CAT_SLUGS = ["amortizatory", "stoyki", "pruzhiny", "opory", "pylniki", "ry
   "tormoza", "filtry", "remni", "dvigatel", "stupicy", "masla", "elektrika", "prochee"];
 const params = new URLSearchParams(location.search);
 const fromSlug = CAT_SLUGS.indexOf(params.get("razdel"));
-if (fromSlug >= 0) state.cat = fromSlug;
+if (fromSlug >= 0 && PART_CATEGORIES[fromSlug]) state.cat = fromSlug;
 if (ALL_CARS.includes(params.get("marka"))) {
   state.car = params.get("marka");
   if ((MODELS[state.car] || []).includes(params.get("model"))) state.model = params.get("model");
