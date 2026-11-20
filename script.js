@@ -608,12 +608,18 @@ modal.addEventListener("close", () => historyClose(modal));
 
 // Амортизаторы, стойки и пружины меняют парой: показываем цену за пару и вторую сторону
 const PAIR_CATS = { 0: "Амортизаторы", 1: "Стойки", 2: "Пружины" };
+// Сверяем описание серии без обозначений левой/правой стороны.
+const pairName = name => low(name).replace(/(^|[^а-яa-z0-9])(?:лев(?:ая|ый|ое)?|прав(?:ая|ый|ое)?|lh|rh|fl|fr|rl|rr)(?![а-яa-z0-9])/gi, "$1").replace(/[().,\s]+/g, " ").trim();
+const packedPair = it => /комплект|набор|парой|пара|2\s*(?:шт|штук)/i.test(it.name);
+const bothSides = it => /(?:прав\s*\/\s*лев|лев\s*\/\s*прав|прав,\s*лев|лев,\s*прав)(?![а-я])/i.test(it.side);
 function pairOf(it) {
-  if (!it.fits || !(it.place.left || it.place.right)) return null;
-  const base = baseOf(it.fi), p = it.place;
-  return ITEMS.filter(x => x !== it && x.bi === it.bi && x.cat === it.cat &&
-    x.place.left === p.right && x.place.right === p.left && x.place.front === p.front && x.place.rear === p.rear &&
-    baseOf(x.fi) === base).sort((a, b) => a.price - b.price)[0] || null;
+  const p = it.place, base = baseOf(it.fi);
+  if (!base || p.left === p.right || p.front === p.rear || it.repl || packedPair(it)) return null;
+  const name = pairName(it.name);
+  const group = ITEMS.filter(x => x.bi === it.bi && x.cat === it.cat && baseOf(x.fi) === base &&
+    x.place.front === p.front && x.place.rear === p.rear && x.place.left !== x.place.right &&
+    !x.repl && !packedPair(x) && pairName(x.name) === name);
+  return group.length === 2 ? group.find(x => x.place.left !== p.left) || null : null;
 }
 function pairBlock(it) {
   const what = PAIR_CATS[it.cat];
@@ -626,8 +632,9 @@ function pairBlock(it) {
       <p class="pair__sum">Цена за пару: <b>${money(it.price + other.price)}</b></p>
       <button class="btn btn--ghost" data-list-pair="${other.i}">Добавить пару в список</button>
     </div>`;
-  if (it.place.left || it.place.right) return `<div class="pair">
-      <p><b>${what} меняют парой</b> — вторую сторону подберём по телефону.</p></div>`;
+  if (!bothSides(it) || packedPair(it) || it.repl) return `<div class="pair">
+      <p>Уточним по номеру кузова, какие артикулы нужны на обе стороны.</p>
+      ${MAX_LINK ? '<button class="btn btn--max" data-ask-pair>Подобрать пару в MAX</button><p class="ask__tip" data-pair-tip hidden></p>' : `<a class="btn btn--call" href="${PHONE_LINK}">Позвонить для подбора пары</a>`}</div>`;
   return `<div class="pair">
       <p><b>${what} меняют парой</b> — на обе стороны одной оси.</p>
       <p class="pair__sum">Цена за пару (2 шт.): <b>${money(it.price * 2)}</b></p>
@@ -823,6 +830,13 @@ modalBody.addEventListener("click", async e => {
     try { await navigator.clipboard.writeText(it.article); tip.textContent = `Артикул ${it.article} скопирован.`; }
     catch { tip.textContent = `Артикул: ${it.article}`; }
     tip.hidden = false;
+  }
+  if (e.target.closest("[data-ask-pair]")) {
+    const message = `Здравствуйте! Подберите, пожалуйста, пару к детали ${it.brand} ${it.article} — ${it.name}. Какие артикулы нужны и сколько стоят обе стороны? Номер кузова моей машины: `;
+    const pairTip = modal.querySelector("[data-pair-tip]");
+    pairTip.textContent = await openMaxWith(message) ? "Вставьте текст в чат MAX и допишите номер кузова." : message;
+    pairTip.hidden = false;
+    return;
   }
   if (e.target.closest("[data-ask-max]")) {
     tip.textContent = await openMaxWith(askText(it)) ? "Текст вопроса скопирован — вставьте его в чат MAX." : askText(it);
