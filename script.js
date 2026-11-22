@@ -30,6 +30,7 @@ const ICONS = [
   svg('<path d="M9 3h6v3l3 3v11a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V9l3-3z"/><path d="M6 12h12"/>'),
   svg('<path d="M13 2 4 14h7l-1 8 9-12h-7z"/>'),
   svg('<rect x="4" y="4" width="16" height="16" rx="3"/><path d="M9 9h6v6H9z"/>'),
+  svg('<rect x="4" y="6" width="16" height="12" rx="2"/><path d="M2 9h2m16 6h2M8 9v6m4-6v6m4-6v6"/>'),
 ];
 
 // Кнопки «Написать в MAX» на странице появляются, только когда задана ссылка
@@ -124,13 +125,13 @@ function addParts(names, fits, rows, sort = true) {
     const it = {
       i: ITEMS.length, cat: r[0], bi: r[1], brand: D.b[r[1]], article: String(r[2]), ni: r[3], name: NAMES[r[3]],
       si: r[4], side: D.s[r[4]], fi: r[5], fits: FITS[r[5]], price: r[6], sale: r[7] === 1,
-      extra: r[8], extraL: low(r[8]), repl: r[9] || "", art: norm(r[2]), isMain: MAIN_BRAND[r[1]], place: mergePlace(SIDE_PLACE[r[4]], NAME_PLACE[r[3]], FITS_PLACE[r[5]]),
+      stock: r[10] || null, extra: r[8], extraL: low(r[8]), repl: r[9] || "", art: norm(r[2]), isMain: MAIN_BRAND[r[1]], place: mergePlace(SIDE_PLACE[r[4]], NAME_PLACE[r[3]], FITS_PLACE[r[5]]),
       cars: FITS_CARS[r[5]],
     };
     FITS_USE[it.fi]++;
     ITEMS.push(it);
   });
-  if (sort) ITEMS.sort((a, b) => (isMainCat(b) - isMainCat(a)) || (b.isMain - a.isMain) || a.cat - b.cat);
+  if (sort) ITEMS.sort((a, b) => (isMainCat(b) - isMainCat(a)) || (b.isMain - a.isMain) || a.cat - b.cat || Number(!!b.stock) - Number(!!a.stock));
 }
 
 // Марки и модели для подбора «марка → модель»
@@ -237,7 +238,7 @@ document.querySelectorAll("[data-updated]").forEach(el => el.textContent = PARTS
 let brandCount = {}, brandOrder = [];
 function countBrands() {
   brandCount = {};
-  ITEMS.forEach(it => { brandCount[it.brand] = (brandCount[it.brand] || 0) + 1; });
+  ITEMS.forEach(it => { if (!it.brand) return; brandCount[it.brand] = (brandCount[it.brand] || 0) + 1; });
   brandOrder = Object.keys(brandCount).sort((a, b) =>
     (/^(kyb|obk)$/i.test(b) - /^(kyb|obk)$/i.test(a)) || brandCount[b] - brandCount[a]);
 }
@@ -333,25 +334,29 @@ function filtered() {
 
 // «Наличие уточнять» — или, если в прайсе номер снят и заменён, серая плашка с новым номером
 const STOCK_TEXT = "Наличие уточнять";
+const stockLabel = it => it.stock ? "В наличии по Фарпосту" : STOCK_TEXT;
+const priceLabel = price => price == null ? "Уточнить цену" : money(price);
+const displayArticle = it => it.stock ? it.stock.article : it.article;
 const stockBadge = it => it.repl
   ? `<span class="badge badge--repl">Заменён на ${escapeHtml(it.repl)}</span>`
-  : `<span class="badge">${STOCK_TEXT}</span>`;
+  : `<span class="badge">${stockLabel(it)}</span>`;
 // В карточке эти же слова стоят на кнопке в MAX, поэтому отдельная плашка нужна только у заменённых номеров
-const cardBadge = it => it.repl || !MAX_LINK ? stockBadge(it) : "";
+const cardBadge = it => it.stock || it.repl || !MAX_LINK ? stockBadge(it) : "";
 
 function card(it) {
+  const photo = it.stock?.photo;
   return `
   <article class="card part" data-i="${it.i}" tabindex="0">
     <div class="part__top">
-      <span class="part__icon">${ICONS[it.cat]}</span>
-      <span class="part__brand${it.isMain ? " part__brand--main" : ""}">${escapeHtml(it.brand)}</span>
+      ${photo ? `<img class="part__photo" src="${escapeHtml(photo)}" alt="${escapeHtml(it.name)}" loading="lazy" decoding="async">` : it.cat === 16 ? "" : `<span class="part__icon">${ICONS[it.cat]}</span>`}
+      ${it.brand ? `<span class="part__brand${it.isMain ? " part__brand--main" : ""}">${escapeHtml(it.brand)}</span>` : ""}
     </div>
-    <div class="part__article">${escapeHtml(it.article)}</div>
+    ${displayArticle(it) ? `<div class="part__article">${escapeHtml(displayArticle(it))}</div>` : ""}
     <h3 class="card__name">${escapeHtml(it.name)}${it.side ? ` <span class="part__side">${escapeHtml(it.side)}</span>` : ""}</h3>
     ${it.fits ? `<p class="part__fits">${escapeHtml(it.fits)}</p>` : ""}
     <div class="part__badges">${cardBadge(it)}${it.sale ? '<span class="badge badge--sale">Распродажа</span>' : ""}</div>
-    <div class="card__price">${money(it.price)}</div>
-    ${MAX_LINK ? `<button type="button" class="part__ask" data-ask="${it.i}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3C7 3 3 6.6 3 11c0 2.4 1.2 4.6 3.1 6L5 21l4.3-2.3c.9.2 1.8.3 2.7.3 5 0 9-3.6 9-8s-4-8-9-8z"/></svg>${STOCK_TEXT}</button>` : ""}
+    <div class="card__price">${priceLabel(it.price)}</div>
+    ${MAX_LINK ? `<button type="button" class="part__ask" data-ask="${it.i}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3C7 3 3 6.6 3 11c0 2.4 1.2 4.6 3.1 6L5 21l4.3-2.3c.9.2 1.8.3 2.7.3 5 0 9-3.6 9-8s-4-8-9-8z"/></svg>${it.stock ? (it.price == null ? "Уточнить цену в MAX" : "Спросить в MAX") : STOCK_TEXT}</button>` : ""}
   </article>`;
 }
 
@@ -441,9 +446,12 @@ const topBrands = n => {
   return order.slice(0, 3).join(", ");
 };
 // Фото разделов (деталь без фона, images/cat/NN.webp); где фото нет — значок
-const CAT_PHOTOS = [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
+// Порядок должен совпадать с CAT_SLUGS в заметки/seo_stranicy.py
+const CAT_SLUGS = ["amortizatory", "stoyki", "pruzhiny", "opory", "pylniki", "rychagi", "rulevoe", "stabilizator",
+  "tormoza", "filtry", "remni", "dvigatel", "stupicy", "masla", "elektrika", "prochee", "radiatory"];
+const CAT_PHOTOS = [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 14, 15, 16];
 const tileMedia = n => CAT_PHOTOS.includes(n)
-  ? `<span class="tile__media"><img src="images/cat/${String(n).padStart(2, "0")}.webp" alt="${escapeHtml(PART_CATEGORIES[n])}" width="520" height="520" loading="lazy"></span>`
+  ? `<span class="tile__media"><img src="images/cat/${n === 16 ? "16-tile" : String(n).padStart(2, "0")}.webp" alt="${escapeHtml(PART_CATEGORIES[n])}" width="520" height="520" loading="lazy"></span>`
   : `<span class="tile__media"><span class="tile__icon">${ICONS[n]}</span></span>`;
 const tile = n => `
   <button class="tile" data-cat="${n}">
@@ -462,7 +470,7 @@ $("tiles").innerHTML = `
       </span>
     </button>`).join("")}</div>
   <p class="tiles__label tiles__label--other">Другие запчасти</p>
-  <div class="tiles__other">${PART_CATEGORIES.map((_, n) => n).filter(n => PART_CATEGORIES[n] && !MAIN_CATS.includes(n)).map(tile).join("")}</div>`;
+  <div class="tiles__other">${PART_CATEGORIES.map((_, n) => n).filter(n => PART_CATEGORIES[n] && !MAIN_CATS.includes(n)).sort((a, b) => Number(CAT_SLUGS[a] === "prochee") - Number(CAT_SLUGS[b] === "prochee")).map(tile).join("")}</div>`;
 $("tiles").addEventListener("click", e => {
   const t = e.target.closest(".tile");
   if (!t) return;
@@ -559,18 +567,18 @@ function openPart(i) {
   const rows = [
     ["Раздел", PART_CATEGORIES[it.cat]],
     ["Бренд", it.brand],
-    ["Артикул", it.article],
+    ["Артикул", displayArticle(it)],
     ["Установка", it.side],
     ["Подходит", it.fits],
     ["Номера замен", it.extra.split(" ").filter(Boolean).join(", ")],
   ].filter(([, v]) => v);
   modalBody.innerHTML = `
-    <div class="modal__img modal__img--icon">${ICONS[it.cat]}</div>
+    ${it.stock?.photo ? `<div class="modal__img modal__img--product"><img src="${escapeHtml(it.stock.photo)}" alt="${escapeHtml(it.name)}"></div>` : it.cat === 16 ? "" : `<div class="modal__img modal__img--icon">${ICONS[it.cat]}</div>`}
     <div class="modal__body">
       <h2>${escapeHtml(it.name)}</h2>
       <table class="specs">${rows.map(([k, v]) => `<tr><td>${k}</td><td>${escapeHtml(v)}</td></tr>`).join("")}</table>
-      <div class="modal__price">${money(it.price)}${it.sale ? ' <span class="badge badge--sale">Распродажа</span>' : ""}</div>
-      <p class="modal__note">${stockBadge(it)} ${it.repl ? `Номер снят, вместо него — ${escapeHtml(it.repl)}. Уточним наличие нового.` : `Цена по прайсу от ${PARTS_UPDATED}.`}</p>
+      <div class="modal__price">${priceLabel(it.price)}${it.sale ? ' <span class="badge badge--sale">Распродажа</span>' : ""}</div>
+      <p class="modal__note">${stockBadge(it)} ${it.stock ? `<a href="${escapeHtml(it.stock.url)}" target="_blank" rel="noopener">Объявление на Фарпосте</a>` : it.repl ? `Номер снят, вместо него — ${escapeHtml(it.repl)}. Уточним наличие нового.` : `Цена по прайсу от ${PARTS_UPDATED}.`}</p>
       <p class="modal__hint">Перед заказом пришлите полный номер кузова — проверим, что деталь подойдёт. Отправляем по России, до ТК — 300 ₽.</p>
       ${pairBlock(it)}
       <div class="ask">
@@ -578,7 +586,7 @@ function openPart(i) {
         <a class="btn btn--call btn--big" href="${PHONE_LINK}">Позвонить: ${PHONE_TEXT}</a>
         ${MAX_LINK ? `<button class="btn btn--max" data-ask-max>Спросить в MAX</button>` : ""}
         <a class="btn btn--ghost" href="sms:${SMS_NUMBER}?&body=${encodeURIComponent(askText(it))}">Спросить по СМС</a>
-        <button class="btn btn--ghost" data-copy>Скопировать артикул</button>
+        ${displayArticle(it) ? `<button class="btn btn--ghost" data-copy>Скопировать артикул</button>` : ""}
         <button class="btn btn--ghost" data-share>Поделиться ссылкой на товар</button>
       </div>
       <p class="ask__tip" id="askTip" hidden></p>
@@ -662,10 +670,15 @@ function addToList(it, q = 1) {
 }
 const listModal = $("listModal"), listBody = $("listBody"), listFab = $("listFab");
 const listRows = () => wish.map(w => ({ ...w, it: BY_KEY.get(w.k) })).filter(r => r.it); // ещё не догруженные — пока не показываем
-const listTotal = () => listRows().reduce((s, r) => s + r.it.price * r.q, 0);
+const listTotal = () => {
+  const rows = listRows();
+  if (!rows.some(r => r.it.price == null)) return money(rows.reduce((s, r) => s + r.it.price * r.q, 0));
+  const known = rows.reduce((s, r) => r.it.price == null ? s : s + r.it.price * r.q, 0);
+  return known ? money(known) + " + товары без цены" : "Уточнить цену";
+};
 function listText() {
-  const lines = listRows().map((r, n) => `${n + 1}. ${r.it.brand} ${r.it.article} — ${r.it.name}${r.it.side ? " (" + r.it.side + ")" : ""} — ${r.q} шт. × ${money(r.it.price)}`);
-  return `Здравствуйте! Хочу заказать / уточнить наличие:\n${lines.join("\n")}\nИтого по сайту: ${money(listTotal())}\nНомер кузова моей машины: \nСписок с сайта «Амортизаторы-Пружины».`;
+  const lines = listRows().map((r, n) => `${n + 1}. ${[r.it.brand, displayArticle(r.it), r.it.name].filter(Boolean).join(" ")}${r.it.side ? " (" + r.it.side + ")" : ""} — ${r.q} шт. · ${priceLabel(r.it.price)}`);
+  return `Здравствуйте! Хочу заказать / уточнить наличие:\n${lines.join("\n")}\nИтого по сайту: ${listTotal()}\nНомер кузова моей машины: \nСписок с сайта «Амортизаторы-Пружины».`;
 }
 // Сколько товаров выпало из списка, потому что их нет в новом прайсе — говорим об этом, а не молча убираем (М40)
 let listGone = 0;
@@ -686,16 +699,16 @@ function renderList() {
     <p class="related__hint">Отправьте список в MAX или по СМС — проверим наличие и ответим.</p>
     <div class="list">${listRows().map(r => `
       <div class="list__row">
-        <button class="list__name" data-open-part="${r.it.i}"><b>${escapeHtml(r.it.brand)} ${escapeHtml(r.it.article)}</b>
+        <button class="list__name" data-open-part="${r.it.i}"><b>${escapeHtml([r.it.brand, displayArticle(r.it)].filter(Boolean).join(" "))}</b>
           <span>${escapeHtml(r.it.name)}${r.it.side ? ` <span class="part__side">${escapeHtml(r.it.side)}</span>` : ""}</span></button>
         <div class="list__qty">
           <button data-minus="${escapeHtml(r.k)}" aria-label="Меньше">−</button><span>${r.q}</span><button data-plus="${escapeHtml(r.k)}" aria-label="Больше">+</button>
         </div>
-        <span class="list__price">${money(r.it.price * r.q)}</span>
+        <span class="list__price">${priceLabel(r.it.price == null ? null : r.it.price * r.q)}</span>
         <button class="list__del" data-del="${escapeHtml(r.k)}" aria-label="Убрать из списка">×</button>
       </div>`).join("")}
     </div>
-    <p class="list__total">Итого: <b>${money(listTotal())}</b></p>
+    <p class="list__total">Итого: <b>${listTotal()}</b></p>
     <div class="ask">
       ${MAX_LINK ? `<button class="btn btn--max btn--big" data-list-max>Отправить список в MAX</button>` : ""}
       <a class="btn btn--ghost" href="sms:${SMS_NUMBER}?&body=${encodeURIComponent(listText())}">Отправить по СМС</a>
@@ -739,7 +752,7 @@ listModal.addEventListener("click", async e => {
 renderList();
 
 // Текст вопроса маме — сразу с брендом, артикулом и названием
-const askText = it => `Здравствуйте! Есть в наличии ${it.brand} ${it.article} — ${it.name}${it.side ? " (" + it.side + ")" : ""}? Нашёл на сайте «Амортизаторы-Пружины». Номер кузова моей машины: `;
+const askText = it => it.stock ? `Здравствуйте! Подскажите актуальные цену и наличие: ${it.name}. Объявление: ${it.stock.url} Номер кузова моей машины: ` : `Здравствуйте! Есть в наличии ${it.brand} ${it.article} — ${it.name}${it.side ? " (" + it.side + ")" : ""}? Нашёл на сайте «Амортизаторы-Пружины». Номер кузова моей машины: `;
 
 // Для той же машины: тот же бренд и та же применимость (пара, пружины, опоры…)
 function sameCar(it) {
@@ -789,8 +802,8 @@ function related(title, list, hint) {
     <h3>${title}</h3>
     <p class="related__hint">${hint}</p>
     ${list.map(x => `<button class="related__item" data-open="${x.i}">
-      <span><b>${escapeHtml(x.brand)} ${escapeHtml(x.article)}</b> · ${escapeHtml(x.name)}${x.side ? ` <span class="part__side">${escapeHtml(x.side)}</span>` : ""}</span>
-      <span class="related__price">${money(x.price)}</span>
+      <span><b>${escapeHtml([x.brand, displayArticle(x)].filter(Boolean).join(" "))}</b> · ${escapeHtml(x.name)}${x.side ? ` <span class="part__side">${escapeHtml(x.side)}</span>` : ""}</span>
+      <span class="related__price">${priceLabel(x.price)}</span>
     </button>`).join("")}
   </section>`;
 }
@@ -827,8 +840,8 @@ modalBody.addEventListener("click", async e => {
     tip.hidden = false;
   }
   if (e.target.closest("[data-copy]")) {
-    try { await navigator.clipboard.writeText(it.article); tip.textContent = `Артикул ${it.article} скопирован.`; }
-    catch { tip.textContent = `Артикул: ${it.article}`; }
+    try { await navigator.clipboard.writeText(displayArticle(it)); tip.textContent = `Артикул ${displayArticle(it)} скопирован.`; }
+    catch { tip.textContent = `Артикул: ${displayArticle(it)}`; }
     tip.hidden = false;
   }
   if (e.target.closest("[data-ask-pair]")) {
@@ -861,9 +874,6 @@ $("modalClose").addEventListener("click", () => closeDialog(modal));
 modal.addEventListener("click", e => { if (e.target === modal) closeDialog(modal); });
 
 // Пришли со страницы раздела или марки (?razdel=amortizatory&marka=Toyota&model=Camry) — сразу ставим фильтры
-// Порядок должен совпадать с CAT_SLUGS в заметки/seo_stranicy.py
-const CAT_SLUGS = ["amortizatory", "stoyki", "pruzhiny", "opory", "pylniki", "rychagi", "rulevoe", "stabilizator",
-  "tormoza", "filtry", "remni", "dvigatel", "stupicy", "masla", "elektrika", "prochee"];
 const params = new URLSearchParams(location.search);
 const fromSlug = CAT_SLUGS.indexOf(params.get("razdel"));
 if (fromSlug >= 0 && PART_CATEGORIES[fromSlug]) state.cat = fromSlug;
