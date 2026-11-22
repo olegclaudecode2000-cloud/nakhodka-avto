@@ -7,7 +7,7 @@ const MAX_LINK = "https://max.ru/u/f9LHodD0cOJmKBGLTE8lXDUSykXb1SczNsx1-aqDhf4wk
 function escapeHtml(s) {
   return String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 }
-const money = n => n.toLocaleString("ru-RU") + " ₽";
+const money = n => n.toLocaleString("ru-RU", { maximumFractionDigits: 2 }) + " ₽";
 // Артикул без пробелов, дефисов и точек — чтобы «KYB 334-505» нашлось как «334505»
 const norm = s => String(s).toLowerCase().replace(/[\s\-./]/g, "");
 
